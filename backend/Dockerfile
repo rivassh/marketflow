@@ -17,6 +17,10 @@ RUN docker-php-ext-install \
     opcache \
     pcntl
 
+RUN curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php && \
+    php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer && \
+    rm /tmp/composer-setup.php
+
 WORKDIR /var/www/html
 
 COPY . /var/www/html
