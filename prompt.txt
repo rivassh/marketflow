@@ -1,0 +1,1445 @@
+
+u are a Senior Software Architect and Full-Stack Laravel/Vue/Nuxt Engineer.
+
+Build a production-ready MVP for a price and product-condition alert platform.
+
+The platform allows users to:
+
+1. Submit a product URL from Torob.
+2. Configure one or more conditions such as:
+   - Minimum price
+   - Maximum price
+   - Price range
+   - Product availability
+   - Stock status
+   - Seller/shop name
+   - JSON/API field values
+   - HTML element values, if the source legally permits HTML fetching
+3. Configure a notification channel such as SMS.
+4. The system periodically checks the source.
+5. If the configured conditions are satisfied, the system sends a notification.
+6. The notification must be deduplicated and must not be sent repeatedly unless the state changes or the user explicitly configures repeated notifications.
+
+The system must be extensible for future providers such as Divar and other marketplaces.
+
+The primary architecture must be:
+
+- Domain-Driven Design
+- SOLID
+- DRY
+- Modular Monolith
+- Workflow-based
+- Adapter-based external integrations
+- Testable and maintainable
+- Resource-efficient for MVP
+- Security-first
+- API-first
+
+Do not implement the entire system in one step. Work phase by phase. At the end of each phase:
+- Run tests
+- Run static analysis
+- Run formatting
+- Report changed files
+- Report known limitations
+- Wait for approval before starting the next phase unless explicitly instructed otherwise.
+
+==================================================
+1. VERSION AND STACK POLICY
+==================================================
+
+Before coding, inspect the current stable versions from official documentation only.
+
+Use:
+
+Backend:
+- PHP 8.3+ or the latest PHP version supported by the selected Laravel version
+- Laravel 13 if stable and officially supported
+- Otherwise use the latest stable Laravel version
+- Laravel Sanctum for SPA/API authentication
+- Laravel Queues
+- Laravel Scheduler
+- Laravel Notifications
+- Laravel Events and Listeners
+- Laravel HTTP Client
+- Laravel Cache
+- Laravel RateLimiter
+
+Frontend:
+- Vue 3
+- Nuxt latest stable version
+- Do not use Nuxt alpha, beta, nightly, or canary versions for production
+- Tailwind CSS latest stable version compatible with Nuxt
+- TypeScript
+- Pinia only if state management is required
+- VueUse may be used only if it provides clear value
+
+Database:
+- PostgreSQL for production
+- SQLite option for local development and automated tests
+- Use UUID or ULID identifiers consistently
+- Prefer ULID unless there is a clear reason to use UUID
+
+Infrastructure:
+- Docker Compose
+- PHP-FPM
+- Nginx or Laravel Octane only if justified
+- PostgreSQL
+- Optional Redis
+- For MVP, use database queue and database cache by default to minimize infrastructure
+- Redis must remain supported as an optional production optimization
+
+SMS:
+- Provider abstraction
+- Implement one fake/local provider for testing
+- Implement one configurable Iranian SMS provider adapter
+- The provider must be configurable through environment variables
+- Never hard-code credentials
+
+All UI text must be Persian.
+All source-code comments must be in English.
+Use RTL layout.
+Use Persian-friendly number and date formatting.
+Store monetary values as integer minor units, never floating point.
+
+==================================================
+2. PRODUCT NAME AND DOMAIN LANGUAGE
+==================================================
+
+Use a configurable project name. Suggested name:
+
+Price Watcher
+
+Suggested Persian title:
+
+هشدار قیمت
+
+Main domain terms:
+
+- User
+- Product
+- Product Source
+- Watch
+- Condition
+- Workflow
+- Workflow Execution
+- Observation
+- Notification
+- Notification Delivery
+- Provider
+- Alert Event
+- Rule
+- Rule Group
+- Check Schedule
+
+Use consistent domain terminology throughout code, database, API, tests, and UI.
+
+==================================================
+3. IMPORTANT LEGAL AND SAFETY REQUIREMENTS
+==================================================
+
+Do not bypass CAPTCHA.
+Do not bypass anti-bot systems.
+Do not rotate suspicious proxies.
+Do not forge browser cookies.
+Do not use stolen session data.
+Do not impersonate a browser to evade access controls.
+Do not scrape protected pages aggressively.
+
+The Torob integration must support:
+
+- Official or authorized APIs where available
+- Public endpoints only when permitted
+- Configurable rate limits
+- Exponential backoff
+- Retry limits
+- Response caching
+- Conditional requests when supported
+- Request timeout
+- Circuit breaker behavior
+- Clear logging of provider failures
+- A provider health status
+
+The system must gracefully handle:
+
+- CAPTCHA
+- HTTP 403
+- HTTP 429
+- HTTP 5xx
+- Invalid JSON
+- Schema changes
+- Timeout
+- Provider unavailable
+- Product deleted
+- Product unavailable
+- Empty result
+- Partial response
+
+If an integration cannot legally or reliably fetch data, mark it as unavailable and show a clear provider error. Do not attempt to bypass the restriction.
+
+==================================================
+4. HIGH-LEVEL ARCHITECTURE
+==================================================
+
+Use a modular monolith.
+
+Suggested backend modules:
+
+app/
+  Domain/
+    Identity/
+    Catalog/
+    Monitoring/
+    Workflow/
+    Notification/
+    Provider/
+    Shared/
+
+  Application/
+    Identity/
+    Catalog/
+    Monitoring/
+    Workflow/
+    Notification/
+    Provider/
+
+  Infrastructure/
+    Persistence/
+    Providers/
+    Notifications/
+    Scheduling/
+    Logging/
+
+  Http/
+    Controllers/
+    Requests/
+    Resources/
+    Middleware/
+
+Suggested module responsibilities:
+
+Identity:
+- Registration
+- Login
+- Logout
+- Email or phone verification
+- User profile
+- User notification preferences
+
+Catalog:
+- Product
+- Product source
+- Canonical product URL
+- External provider product ID
+- Product metadata
+- Product snapshot
+
+Monitoring:
+- Watch creation
+- Watch activation/deactivation
+- Check frequency
+- Check execution
+- Observation history
+- Last successful observation
+- Last failed observation
+
+Workflow:
+- Workflow definitions
+- Workflow versions
+- Trigger conditions
+- Rule groups
+- Rule operators
+- Workflow execution
+- Workflow result
+
+Notification:
+- Notification channel
+- SMS delivery
+- Delivery status
+- Retry
+- Deduplication
+- Notification templates
+
+Provider:
+- Source provider interface
+- Torob adapter
+- Future Divar adapter
+- Provider response normalization
+- Provider health checks
+
+Shared:
+- Value objects
+- Domain events
+- Exceptions
+- Result objects
+- Clock abstraction
+- Money value object
+- URL value object
+- JSON path utilities
+- Pagination and filtering
+
+==================================================
+5. DOMAIN MODEL
+==================================================
+
+Implement the following core entities.
+
+User:
+- id
+- name
+- mobile
+- email nullable
+- password
+- status
+- mobile_verified_at
+- created_at
+- updated_at
+
+Product:
+- id
+- provider
+- external_id
+- canonical_url
+- title nullable
+- image_url nullable
+- metadata JSON nullable
+- last_known_status
+- created_at
+- updated_at
+
+Watch:
+- id
+- user_id
+- product_id
+- name
+- status: active, paused, disabled
+- check_interval_seconds
+- next_check_at
+- last_checked_at nullable
+- last_success_at nullable
+- last_error_at nullable
+- last_error_code nullable
+- created_at
+- updated_at
+
+Workflow:
+- id
+- watch_id
+- type
+- version
+- status
+- configuration JSON
+- created_at
+- updated_at
+
+Observation:
+- id
+- watch_id
+- provider
+- observed_at
+- normalized_data JSON
+- raw_data JSON nullable
+- content_hash
+- status
+- error_code nullable
+- error_message nullable
+- response_time_ms nullable
+
+AlertEvent:
+- id
+- watch_id
+- workflow_id
+- observation_id
+- event_key
+- state
+- triggered_at
+- resolved_at nullable
+- payload JSON
+
+Notification:
+- id
+- user_id
+- watch_id
+- alert_event_id nullable
+- channel
+- recipient
+- template
+- payload JSON
+- status
+- provider_message_id nullable
+- sent_at nullable
+- failed_at nullable
+- failure_reason nullable
+- attempts
+
+ProviderRequestLog:
+- id
+- provider
+- request_hash
+- endpoint_identifier
+- status_code nullable
+- response_time_ms nullable
+- success
+- error_code nullable
+- metadata JSON nullable
+- created_at
+
+Use domain value objects where appropriate:
+
+- Money
+- ProductUrl
+- ProviderProductId
+- MobileNumber
+- CheckInterval
+- ConditionOperator
+- WorkflowType
+- NotificationChannel
+- ProviderName
+
+==================================================
+6. PROVIDER ABSTRACTION
+==================================================
+
+Create a provider contract similar to:
+
+interface MarketplaceProvider
+{
+    public function supports(ProductUrl $url): bool;
+
+    public function parseProductReference(ProductUrl $url): ProductReference;
+
+    public function fetchProduct(ProductReference $reference): ProviderProductSnapshot;
+
+    public function normalizeSnapshot(
+        ProviderProductSnapshot $snapshot
+    ): NormalizedProductData;
+}
+
+The application layer must not directly call Torob URLs.
+
+Create:
+
+- TorobProvider
+- FakeMarketplaceProvider for tests
+- Future DivarProvider placeholder
+
+Use a ProviderRegistry:
+
+interface ProviderRegistry
+{
+    public function resolveByUrl(ProductUrl $url): MarketplaceProvider;
+}
+
+The Torob adapter must extract the product ID from URLs such as:
+
+https://torob.com/p/{product-id}/{slug}/
+
+Do not rely only on the slug.
+
+The provider adapter must support configuration for:
+
+- Base URL
+- API endpoint paths
+- Request timeout
+- Connect timeout
+- Retry count
+- Backoff
+- Rate limit
+- Cache TTL
+- User-Agent
+- Required headers
+- Enable/disable flag
+
+Do not store raw cookies or user session data in the database.
+
+Do not make provider-specific fields leak into the core domain. Normalize provider responses to a common structure.
+
+Suggested normalized structure:
+
+{
+  "provider": "torob",
+  "external_id": "...",
+  "title": "...",
+  "price": {
+    "amount": 9500000,
+    "currency": "IRR",
+    "display": "۹٫۵۰۰٫۰۰۰ تومان"
+  },
+  "availability": "available|unavailable|unknown",
+  "stock_status": "...",
+  "seller": {
+    "name": "...",
+    "url": null
+  },
+  "badges": [],
+  "image_url": "...",
+  "product_url": "...",
+  "observed_at": "...",
+  "raw": {}
+}
+
+Price normalization must clearly define whether the source returns Rial or Toman.
+
+Never compare formatted strings such as price_text directly when a numeric price field is available.
+
+Use price_text only as a fallback parser.
+
+==================================================
+7. WORKFLOW SYSTEM
+==================================================
+
+The workflow system is the most important extensibility mechanism.
+
+A workflow consists of:
+
+- Trigger
+- Conditions
+- Action
+- Deduplication policy
+- Cooldown policy
+- Schedule policy
+
+Create enums:
+
+- WorkflowType
+- ConditionField
+- ConditionOperator
+- ActionType
+- NotificationChannel
+- DeduplicationStrategy
+- WorkflowStatus
+
+Initial workflow types:
+
+- PRICE_RANGE_ALERT
+- PRICE_BELOW_ALERT
+- PRICE_ABOVE_ALERT
+- AVAILABILITY_ALERT
+- STOCK_STATUS_ALERT
+- SELLER_ALERT
+- JSON_FIELD_ALERT
+- HTML_SELECTOR_ALERT
+- COMPOSITE_ALERT
+
+Initial operators:
+
+- equals
+- not_equals
+- greater_than
+- greater_than_or_equal
+- less_than
+- less_than_or_equal
+- between
+- contains
+- not_contains
+- starts_with
+- ends_with
+- exists
+- not_exists
+- changed
+- changed_to
+- changed_from
+- matches_regex
+
+Do not execute arbitrary PHP code from user configuration.
+Do not use eval.
+Do not allow arbitrary shell commands.
+Do not allow unrestricted JavaScript execution.
+
+Create a safe condition evaluator:
+
+interface ConditionEvaluator
+{
+    public function evaluate(
+        NormalizedProductData $data,
+        Condition $condition
+    ): ConditionResult;
+}
+
+Use a registry:
+
+interface ConditionEvaluatorRegistry
+{
+    public function resolve(ConditionField $field): ConditionEvaluator;
+}
+
+Suggested condition configuration:
+
+{
+  "type": "all",
+  "conditions": [
+    {
+      "field": "price.amount",
+      "operator": "between",
+      "value": {
+        "min": 10000000,
+        "max": 15000000,
+        "currency": "IRR"
+      }
+    },
+    {
+      "field": "availability",
+      "operator": "equals",
+      "value": "available"
+    }
+  ]
+}
+
+Support nested groups:
+
+{
+  "type": "any",
+  "conditions": [
+    {
+      "type": "all",
+      "conditions": []
+    },
+    {
+      "field": "stock_status",
+      "operator": "contains",
+      "value": "موجود"
+    }
+  ]
+}
+
+Implement a safe JSON path reader for normalized data.
+
+For future HTML selector conditions:
+
+- Use a provider-approved HTML response only
+- Sanitize and limit selector complexity
+- Set maximum response size
+- Set timeout
+- Store selector configuration separately
+- Never parse arbitrary local files
+- Never execute scripts
+- Never allow SSRF to private IP ranges
+
+==================================================
+8. ALERT STATE AND DEDUPLICATION
+==================================================
+
+Avoid sending duplicate SMS messages.
+
+Implement state transitions:
+
+- condition_not_met
+- condition_met
+- notification_pending
+- notification_sent
+- notification_failed
+- resolved
+
+Default behavior:
+
+- Send notification only when a condition changes from false to true.
+- Do not send every time the scheduler runs.
+- If the condition becomes false and later true again, allow a new notification.
+- Support optional cooldown in minutes.
+- Support optional repeat notification interval.
+- Support a maximum notification count per day.
+- Store a deterministic event_key.
+
+Example event_key:
+
+sha256(
+    watch_id
+    + workflow_id
+    + condition_state
+    + normalized relevant values
+)
+
+Use database constraints and idempotency locks to prevent duplicate notifications under concurrent workers.
+
+==================================================
+9. SCHEDULING AND RESOURCE EFFICIENCY
+==================================================
+
+The MVP must minimize resource usage.
+
+Default MVP infrastructure:
+
+- Laravel Scheduler
+- Database queue
+- PostgreSQL
+- Database cache
+- One scheduler process
+- One queue worker
+- No mandatory Redis
+- No mandatory Elasticsearch
+- No mandatory Kubernetes
+
+Use a scheduler command such as:
+
+php artisan monitor:dispatch-due
+
+This command must:
+
+1. Find due active watches.
+2. Lock rows safely.
+3. Dispatch one job per watch.
+4. Update next_check_at.
+5. Avoid dispatching duplicates.
+
+Use a job:
+
+CheckWatchJob
+
+The job must:
+
+1. Load the watch and workflow.
+2. Resolve the provider.
+3. Fetch product data.
+4. Normalize the response.
+5. Store an observation.
+6. Evaluate the workflow.
+7. Create an AlertEvent if needed.
+8. Dispatch notification delivery if needed.
+9. Update watch state.
+10. Log metrics and errors.
+
+Use:
+
+- Queue uniqueness or database locking
+- Retry with exponential backoff
+- Timeout
+- Maximum attempts
+- Provider circuit breaker
+- Per-provider rate limiting
+- Cache product observations when possible
+
+Suggested MVP defaults:
+
+- Minimum check interval: 5 minutes
+- Default interval: 15 minutes
+- Maximum interval configurable by admin
+- Request timeout: 10 seconds
+- Retry attempts: 2
+- Raw response retention: configurable
+- Observation retention: configurable
+
+Never create one operating-system cron entry per user.
+
+==================================================
+10. NOTIFICATION SYSTEM
+==================================================
+
+Create:
+
+interface NotificationChannel
+{
+    public function send(NotificationMessage $message): DeliveryResult;
+}
+
+Implement:
+
+- FakeSmsChannel
+- Configurable IranianSmsChannel
+- NullChannel for development
+
+Use Laravel Notification-style abstractions but keep domain independent from the framework.
+
+SMS message must contain:
+
+- Product title
+- Current price
+- Trigger reason
+- Product URL
+- Application name
+- Optional unsubscribe or notification settings link if appropriate
+
+Implement:
+
+- Delivery log
+- Retry
+- Idempotency
+- Provider response storage
+- Failure handling
+- Per-user rate limit
+- Daily notification limit
+- Admin-configurable SMS template
+
+Never expose SMS provider credentials to the frontend.
+
+==================================================
+11. AUTHENTICATION AND AUTHORIZATION
+==================================================
+
+Implement:
+
+- User registration with mobile number
+- Login
+- Logout
+- Password reset or OTP-based login
+- Mobile verification
+- Sanctum authentication
+- Session management
+- Rate limiting
+- CSRF protection where applicable
+- Strong password rules
+- Authorization policies
+
+Roles:
+
+- user
+- admin
+
+Use policies for:
+
+- Watch access
+- Workflow access
+- Observation access
+- Notification access
+- Admin resources
+
+Users must never access another user's watches, products, workflows, observations, or notifications.
+
+==================================================
+12. ADMIN PANEL
+==================================================
+
+Build a functional admin panel in Nuxt.
+
+Admin features:
+
+1. Dashboard:
+   - Total users
+   - Active watches
+   - Checks in last 24 hours
+   - Provider failures
+   - Notifications sent
+   - Notifications failed
+
+2. User management:
+   - Search
+   - Filter
+   - Suspend/activate
+   - View user watches
+   - View notification history
+
+3. Watch management:
+   - View all watches
+   - Pause/resume
+   - Force check
+   - View last error
+   - View check history
+
+4. Provider management:
+   - Enable/disable provider
+   - View health
+   - View request statistics
+   - Configure rate limits
+   - Configure cache TTL
+
+5. Workflow management:
+   - View workflow types
+   - Enable/disable types
+   - View workflow versions
+   - Configure defaults
+
+6. Notification management:
+   - SMS provider settings
+   - Test SMS
+   - Templates
+   - Daily limits
+   - Failed deliveries
+
+7. System settings:
+   - Default check interval
+   - Maximum check interval
+   - Retention settings
+   - Maintenance mode
+   - Feature flags
+
+Use server-side pagination and filtering.
+Do not load all records into the browser.
+
+==================================================
+13. USER PANEL
+==================================================
+
+Build a Persian RTL responsive user panel.
+
+Pages:
+
+- Login
+- Register
+- Verify mobile
+- Dashboard
+- Create watch
+- Watch details
+- Edit workflow
+- Observation history
+- Notification history
+- Profile
+- Notification settings
+- API error and provider status views
+
+Main user flow:
+
+1. User enters a product URL.
+2. Frontend calls product preview endpoint.
+3. Backend detects provider.
+4. Backend parses product reference.
+5. Backend fetches a preview through the provider adapter.
+6. UI shows:
+   - Product title
+   - Image
+   - Current price
+   - Availability
+   - Provider
+7. User chooses a workflow template.
+8. User configures conditions.
+9. User enters or confirms mobile number.
+10. User saves the watch.
+11. Dashboard shows watch status and next check time.
+
+The UI must handle:
+
+- Invalid URL
+- Unsupported provider
+- CAPTCHA or provider unavailable
+- Rate limit
+- Timeout
+- Product not found
+- Empty response
+- Validation errors
+- Loading state
+- Retry state
+
+==================================================
+14. API DESIGN
+==================================================
+
+Use versioned API:
+
+/api/v1
+
+Suggested endpoints:
+
+Authentication:
+- POST /auth/register
+- POST /auth/login
+- POST /auth/logout
+- GET /auth/me
+- POST /auth/verify-mobile
+
+Product preview:
+- POST /product-previews
+- GET /product-previews/{id}
+
+Watches:
+- GET /watches
+- POST /watches
+- GET /watches/{watch}
+- PATCH /watches/{watch}
+- DELETE /watches/{watch}
+- POST /watches/{watch}/pause
+- POST /watches/{watch}/resume
+- POST /watches/{watch}/check-now
+
+Workflows:
+- GET /workflow-types
+- GET /watches/{watch}/workflows
+- POST /watches/{watch}/workflows
+- PATCH /workflows/{workflow}
+- DELETE /workflows/{workflow}
+- POST /workflows/{workflow}/validate
+
+Observations:
+- GET /watches/{watch}/observations
+
+Notifications:
+- GET /notifications
+- GET /notifications/{notification}
+
+Admin:
+- GET /admin/dashboard
+- GET /admin/users
+- GET /admin/watches
+- GET /admin/providers
+- GET /admin/notifications
+- POST /admin/watches/{watch}/check-now
+
+Use:
+
+- Form Requests
+- API Resources
+- OpenAPI documentation
+- Consistent error response format
+- Request IDs
+- Pagination
+- Filtering
+- Sorting
+- Authorization
+- Rate limiting
+
+Example error response:
+
+{
+  "message": "Unable to fetch product data.",
+  "code": "PROVIDER_UNAVAILABLE",
+  "request_id": "..."
+}
+
+==================================================
+15. DATABASE REQUIREMENTS
+==================================================
+
+Create migrations with:
+
+- Foreign keys
+- Proper indexes
+- Unique constraints
+- Check constraints where supported
+- JSON columns for extensible configuration
+- Soft deletes only where justified
+
+Important indexes:
+
+- watches(status, next_check_at)
+- watches(user_id, status)
+- products(provider, external_id)
+- observations(watch_id, observed_at)
+- notifications(user_id, created_at)
+- alert_events(watch_id, event_key)
+- provider_request_logs(provider, created_at)
+
+Use database transactions for:
+
+- Watch creation
+- Workflow updates
+- Alert event creation
+- Notification creation
+
+Use optimistic or pessimistic locking where required.
+
+==================================================
+16. WORKFLOW SCAFFOLDING COMMAND
+==================================================
+
+Create an Artisan command:
+
+php artisan make:workflow {name}
+    {--provider=}
+    {--fields=}
+    {--force}
+
+The command must generate:
+
+- Workflow enum entry
+- Workflow configuration class
+- Condition field definitions
+- Evaluator class
+- Action class if needed
+- DTOs
+- Tests
+- Frontend workflow metadata
+- Frontend form schema
+- Documentation stub
+
+Generated code must follow the existing module structure.
+
+Example:
+
+php artisan make:workflow availability-alert \
+    --provider=torob \
+    --fields=availability,stock_status
+
+The generator must:
+
+- Convert kebab-case to valid PHP class names
+- Refuse overwriting files unless --force is used
+- Validate names
+- Update registries safely
+- Generate tests
+- Generate a frontend form configuration
+- Generate a README/documentation file
+
+Do not rely on manually editing many unrelated files when adding a workflow.
+
+==================================================
+17. FRONTEND WORKFLOW SCHEMA
+==================================================
+
+The frontend should render workflow forms from metadata rather than hard-coded page-specific logic.
+
+Example metadata:
+
+{
+  "type": "PRICE_RANGE_ALERT",
+  "label": "هشدار محدوده قیمت",
+  "fields": [
+    {
+      "name": "min_price",
+      "component": "money-input",
+      "required": true
+    },
+    {
+      "name": "max_price",
+      "component": "money-input",
+      "required": true
+    }
+  ]
+}
+
+Create reusable components:
+
+- BaseInput
+- MoneyInput
+- SelectInput
+- ToggleInput
+- ConditionBuilder
+- ConditionGroup
+- WorkflowForm
+- ProductPreviewCard
+- WatchStatusBadge
+- ObservationChart
+- NotificationStatusBadge
+- DataTable
+- ConfirmDialog
+- Toast
+- EmptyState
+- ErrorState
+
+Use TypeScript types generated or manually synchronized from the backend API schema.
+
+==================================================
+18. OBSERVABILITY
+==================================================
+
+For MVP implement:
+
+- Structured application logs
+- Request ID
+- Provider request metrics
+- Job success/failure logs
+- Notification metrics
+- Health endpoint
+- Readiness endpoint
+- Basic Laravel Telescope only in local/staging if needed
+
+Prepare extension points for:
+
+- Prometheus
+- Grafana
+- ELK
+- Sentry
+
+Do not add heavy observability infrastructure to the MVP unless explicitly requested.
+
+Log:
+
+- Provider
+- Watch ID
+- Workflow ID
+- Job ID
+- Request ID
+- Duration
+- Result status
+- Error code
+
+Never log:
+
+- Passwords
+- SMS credentials
+- Access tokens
+- Full cookies
+- Sensitive personal information
+- Unmasked phone numbers
+
+==================================================
+19. SECURITY REQUIREMENTS
+==================================================
+
+Apply OWASP best practices.
+
+Must include:
+
+- Validation of all inputs
+- Authorization policies
+- Rate limiting
+- SSRF prevention
+- URL allowlist by provider
+- Private IP blocking
+- DNS rebinding protection where practical
+- Maximum response size
+- Timeout
+- Safe JSON parsing
+- No eval
+- No arbitrary code execution
+- No arbitrary shell execution
+- Secure secrets through environment variables
+- Password hashing
+- Secure session configuration
+- Security headers
+- Audit log for admin actions
+- Mass assignment protection
+- Output escaping
+- XSS protection
+- SQL injection protection through framework query APIs
+
+For external URLs:
+
+- Accept only HTTPS
+- Allow only configured domains
+- Reject localhost
+- Reject private and link-local IPs
+- Reject file://, ftp://, gopher:// and similar schemes
+- Prevent redirects to disallowed domains
+- Limit redirect count
+
+==================================================
+20. TESTING STRATEGY
+==================================================
+
+Backend:
+
+- Unit tests for value objects
+- Unit tests for condition evaluators
+- Unit tests for workflow state transitions
+- Feature tests for authentication
+- Feature tests for watch CRUD
+- Feature tests for authorization
+- Provider contract tests
+- Fake provider tests
+- Queue/job tests
+- Notification tests
+- Idempotency tests
+- Scheduler tests
+- SSRF security tests
+
+Frontend:
+
+- Component tests for reusable controls
+- Workflow form tests
+- Condition builder tests
+- API error-state tests
+- Authentication flow tests
+- E2E tests for:
+  - Register
+  - Login
+  - Add Torob product
+  - Configure price range
+  - Pause/resume watch
+  - View observation
+  - Admin login
+  - Admin force check
+
+Use:
+
+- Pest PHP
+- PHPUnit where required
+- Laravel HTTP fake
+- Laravel Queue fake
+- Laravel Notification fake
+- Playwright for E2E
+- ESLint
+- Prettier
+- PHPStan or Larastan
+- Pint
+
+Minimum quality gates:
+
+- No failing tests
+- No PHPStan/Larastan errors at configured level
+- No ESLint errors
+- No TypeScript errors
+- No formatting errors
+
+==================================================
+21. DOCKER AND LOCAL DEVELOPMENT
+==================================================
+
+Create Docker Compose files:
+
+- compose.yaml
+- compose.dev.yaml
+- compose.prod.example.yaml
+
+Services for MVP:
+
+- app
+- queue
+- scheduler
+- database
+- frontend
+
+Optional:
+
+- redis
+- mailpit
+- adminer
+
+Use:
+
+- Non-root containers where possible
+- Healthchecks
+- Named volumes
+- Environment variables
+- Resource limits
+- Separate development and production configuration
+- No secrets committed to Git
+
+Provide:
+
+- .env.example
+- Makefile or Taskfile
+- README.md
+- Database setup instructions
+- Test instructions
+- Queue instructions
+- Scheduler instructions
+- Production deployment instructions
+
+Suggested commands:
+
+make install
+make up
+make down
+make test
+make lint
+make format
+make migrate
+make seed
+make worker
+make scheduler
+
+==================================================
+22. SEED DATA
+==================================================
+
+Create seed data for:
+
+- Admin user
+- Normal user
+- Fake Torob product
+- Sample price range workflow
+- Sample availability workflow
+- Sample observations
+- Sample notifications
+
+All seed credentials must be clearly marked as local-development-only.
+
+==================================================
+23. IMPLEMENTATION PHASES
+==================================================
+
+PHASE 0 — Discovery and Architecture
+
+Tasks:
+- Inspect existing repository
+- Detect current Laravel, Nuxt, Vue, Tailwind, PHP, Node versions
+- Confirm project structure
+- Create architecture decision records
+- Create bounded-context map
+- Create initial ERD
+- Create API contract draft
+- Create implementation plan
+- Do not implement business logic yet
+
+Deliverables:
+- docs/architecture.md
+- docs/domain-model.md
+- docs/erd.md
+- docs/api-plan.md
+- docs/workflow-system.md
+- docs/security-model.md
+
+PHASE 1 — Project Bootstrap
+
+Tasks:
+- Initialize Laravel backend
+- Initialize Nuxt frontend
+- Configure Tailwind
+- Configure TypeScript
+- Configure Docker Compose
+- Configure PostgreSQL and SQLite testing
+- Configure Pint, PHPStan/Larastan, ESLint, Prettier
+- Configure environment files
+- Add health endpoint
+- Add base layouts and RTL direction
+
+Deliverables:
+- Project boots locally
+- Backend tests run
+- Frontend builds
+- Docker Compose works
+
+PHASE 2 — Identity and Access
+
+Tasks:
+- User model
+- Registration
+- Login
+- Logout
+- Sanctum
+- Mobile verification abstraction
+- Roles
+- Admin middleware
+- Policies
+- Rate limits
+- Basic auth pages
+
+Acceptance criteria:
+- User cannot access another user's data
+- Admin routes are protected
+- Auth tests pass
+
+PHASE 3 — Core Domain and Persistence
+
+Tasks:
+- Product
+- Watch
+- Workflow
+- Observation
+- AlertEvent
+- Notification
+- ProviderRequestLog
+- Migrations
+- Repositories
+- DTOs
+- Value objects
+- Domain events
+
+Acceptance criteria:
+- All domain tests pass
+- Money is never stored as float
+- Important indexes exist
+
+PHASE 4 — Provider System
+
+Tasks:
+- MarketplaceProvider contract
+- ProviderRegistry
+- Torob URL parser
+- Torob adapter
+- Fake provider
+- HTTP client configuration
+- Cache
+- Rate limit
+- Retry/backoff
+- Timeout
+- Circuit breaker behavior
+- Provider error mapping
+
+Acceptance criteria:
+- Valid Torob URLs are parsed
+- Invalid URLs are rejected
+- Fake provider tests work without network
+- CAPTCHA/403/429 are handled safely
+- No anti-bot bypass exists
+
+PHASE 5 — Workflow Engine
+
+Tasks:
+- Workflow enums
+- Condition model
+- Condition parser
+- Condition evaluator registry
+- All/any groups
+- Numeric comparisons
+- String comparisons
+- Exists/not exists
+- Changed/changed_to/changed_from
+- Safe JSON path access
+- Workflow validation en
