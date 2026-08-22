@@ -1,9 +1,10 @@
+# Updated docker-compose.yml with non-conflicting ports
 services:
-  app:
+  backend:
     build: ./backend
-    container_name: marketplace_app
+    container_name: marketflow_backend
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
       - ./backend:/var/www/html
     environment:
@@ -14,22 +15,18 @@ services:
       - DB_PASSWORD=postgres
     depends_on:
       - db
-
+  
   frontend:
     build: ./frontend
-    container_name: marketplace_frontend
+    container_name: marketflow_frontend
     ports:
       - "3000:3000"
-    environment:
-      - API_URL=http://marketplace_app:8000
-    depends_on:
-      - app
-
+  
   db:
     image: postgres:15
-    container_name: db
+    container_name: marketflow_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:

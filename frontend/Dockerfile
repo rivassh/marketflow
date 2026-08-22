@@ -1,23 +1,22 @@
-# Frontend Dockerfile - using Bun for better compatibility
-FROM oven/bun:1.1-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files first for layer caching
 COPY package*.json ./
 
-# Install dependencies with Bun
-RUN bun install
+# Install dependencies
+RUN npm install --no-audit --no-fund
 
 # Copy source code
 COPY . .
 
 # Build for production
 ENV NODE_ENV=production
-RUN bun run build
+RUN npm run build
 
 # Expose port
 EXPOSE 3000
 
 # Start server in production mode
-CMD ["bun", "run", "preview"]
+CMD ["npm", "run", "preview"]
