@@ -1,45 +1,41 @@
 services:
   app:
-    build: "./backend"
+    build: ./backend
     container_name: marketplace_app
+    ports:
+      - "8000:8000"
     volumes:
-      - "/root/nginx-certbot/websites/marketflow/backend:/var/www/html"
-    depends_on:
-      - queue
-      - db
+      - ./backend:/var/www/html
     environment:
       - DB_HOST=db
       - DB_PORT=5432
       - DB_NAME=marketplace
       - DB_USER=postgres
       - DB_PASSWORD=postgres
-  queue:
-    image: renatolove/laravel-queue:latest
-    container_name: queue_worker
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    container_name: marketplace_frontend
+    ports:
+      - "3000:3000"
     environment:
-      - QUEUE_CONNECTION=database
-      - QUEUE_DEFAULT=database
-      - QUEUE_TOTAL=1
-  scheduler:
-    image: renatolove/laravel-scheduler:latest
-    container_name: scheduler
-    environment:
-      - SCHEDULER_QUEUE_CONNECTION=database
+      - API_URL=http://marketplace_app:8000
+    depends_on:
+      - app
+
   db:
     image: postgres:15
     container_name: db
+    ports:
+      - "5432:5432"
     volumes:
-      - "/var/lib/postgresql/data:/var/lib/postgresql/data"
+      - postgres_data:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=marketplace
-  frontend:
-    build: "./frontend"
-    container_name: marketplace_frontend
-    ports:
-      - "3000:3000"
-    depends_on:
-      - app
-    environment:
-      - API_URL=http://marketplace_app:8000
+
+volumes:
+  postgres_data:
