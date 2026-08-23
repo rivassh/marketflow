@@ -1,4 +1,5 @@
-# Updated docker-compose.yml with non-conflicting ports
+# Updated docker-compose.yml with pgadmin and websockets
+
 services:
   backend:
     build: ./backend
@@ -13,6 +14,9 @@ services:
       - DB_NAME=marketplace
       - DB_USER=postgres
       - DB_PASSWORD=postgres
+      - PUSHER_APP_ID=${PUSHER_APP_ID}
+      - PUSHER_APP_KEY=${PUSHER_APP_KEY}
+      - PUSHER_APP_SECRET=${PUSHER_APP_SECRET}
     depends_on:
       - db
   
@@ -20,7 +24,31 @@ services:
     build: ./frontend
     container_name: marketflow_frontend
     ports:
-      - "3000:3000"
+      - "3002:3000"
+  
+  pgadmin4:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@marketflow
+      - PGADMIN_DEFAULT_PASSWORD=admin
+  
+  ws:
+    build: ./backend
+    container_name: marketflow_websockets
+    ports:
+      - "5656:5656"
+    command: php artisan websockets:serve
+    environment:
+      - PUSHER_APP_ID
+      - PUSHER_APP_KEY
+      - PUSHER_APP_SECRET
+    depends_on:
+      - backend
   
   db:
     image: postgres:15
@@ -36,3 +64,4 @@ services:
 
 volumes:
   postgres_data:
+  pgadmin_data:

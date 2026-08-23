@@ -1,0 +1,43 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ProductPriceAlertController;
+
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register API routes for your application. These
+| routes are loaded by the RouteServiceProvider within a group which
+| is assigned the "api" middleware group. Enjoy building your API!
+|
+*/
+
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout']);
+Route::get('/user', [AuthController::class, 'user'])
+    ->middleware('auth:sanctum');
+Route::post('/admin/register', [AdminController::class, 'register']);
+Route::post('/admin/login', [AdminController::class, 'login']);
+Route::post('/admin/logout', [AdminController::class, 'logout'])
+    ->middleware('auth:sanctum');
+Route::get('/admin/user', [AdminController::class, 'user'])
+    ->middleware('auth:sanctum');
+
+/*
+|--------------------------------------------------------------------------
+| Product Price Alerts Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/product-price-alerts', [ProductPriceAlertController::class, 'index']);
+    Route::post('/product-price-alerts', [ProductPriceAlertController::class, 'store']);
+    Route::get('/product-price-alerts/{id}', [ProductPriceAlertController::class, 'show']);
+    Route::put('/product-price-alerts/{id}', [ProductPriceAlertController::class, 'update']);
+    Route::delete('/product-price-alerts/{id}', [ProductPriceAlertController::class, 'destroy']);
+});

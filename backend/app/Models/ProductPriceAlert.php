@@ -1,0 +1,29 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class ProductPriceAlert extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'product_id',
+        'min_price',
+        'max_price',
+        'currency',
+        'availability',
+        'stock_status',
+        'seller_name',
+        'is_active',
+    ];
+
+    protected $guarded = [];
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+}
