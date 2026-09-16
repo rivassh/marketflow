@@ -1,4 +1,4 @@
-# Updated docker-compose.yml with pgadmin and websockets
+version: '3.8'
 
 services:
   backend:
@@ -6,6 +6,7 @@ services:
     container_name: marketflow_backend
     ports:
       - "8001:8000"
+      - "9000:9000"
     volumes:
       - ./backend:/var/www/html
     environment:
@@ -14,17 +15,26 @@ services:
       - DB_NAME=marketplace
       - DB_USER=postgres
       - DB_PASSWORD=postgres
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - PUSHER_APP_ID=${PUSHER_APP_ID}
       - PUSHER_APP_KEY=${PUSHER_APP_KEY}
       - PUSHER_APP_SECRET=${PUSHER_APP_SECRET}
     depends_on:
       - db
+      - redis
+    networks:
+      - sail
+      - default
   
   frontend:
     build: ./frontend
     container_name: marketflow_frontend
     ports:
       - "3002:3000"
+    networks:
+      - sail
+      - default
   
   pgadmin4:
     image: dpage/pgadmin4
@@ -37,6 +47,17 @@ services:
       - PGADMIN_DEFAULT_EMAIL=admin@marketflow
       - PGADMIN_DEFAULT_PASSWORD=admin
   
+  redis:
+    image: redis:latest
+    container_name: marketflow_redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - sail
+      - default
+  
   ws:
     build: ./backend
     container_name: marketflow_websockets
@@ -44,11 +65,14 @@ services:
       - "5656:5656"
     command: php artisan websockets:serve
     environment:
-      - PUSHER_APP_ID
-      - PUSHER_APP_KEY
-      - PUSHER_APP_SECRET
+      - PUSHER_APP_ID=${PUSHER_APP_ID:-default}
+      - PUSHER_APP_KEY=${PUSHER_APP_KEY:-default}
+      - PUSHER_APP_SECRET=${PUSHER_APP_SECRET:-default}
     depends_on:
       - backend
+    networks:
+      - sail
+      - default
   
   db:
     image: postgres:15
@@ -61,7 +85,15 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=marketplace
+    networks:
+      - sail
+      - default
 
 volumes:
   postgres_data:
   pgadmin_data:
+  redis_data:
+
+networks:
+  sail:
+    external: true

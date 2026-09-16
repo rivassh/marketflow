@@ -17,6 +17,9 @@ class Observation extends Model
         'raw_data',
         'content_hash',
         'status',
+        'error_code',
+        'error_message',
+        'response_time_ms',
     ];
 
     protected $casts = [

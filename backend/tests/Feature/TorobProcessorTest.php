@@ -4,8 +4,13 @@ namespace Tests\Feature;
 
 use Tests\TestCase;
 use App\Providers\Processors\TorobProcessor;
-use App\Providers\DTOs\ProductReference;
-use App\Providers\DTOs\ProviderProductSnapshot;
+use App\Providers\DTOs\{
+    ProductReference,
+    ProviderProductSnapshot,
+    NormalizedProductData
+};
+use Illuminate\Support\Facades\Http;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class TorobProcessorTest extends TestCase
 {
@@ -25,8 +30,10 @@ class TorobProcessorTest extends TestCase
 
     public function test_it_does_not_support_non_torob_urls(): void
     {
+        // These URLs should NOT be supported by torob processor
         $this->assertFalse($this->processor->supports('https://divar.ir/12345'));
         $this->assertFalse($this->processor->supports('https://example.com/product'));
+        $this->assertFalse($this->processor->supports('https://other-market.com/p/12345'));
     }
 
     public function test_it_parses_torob_url_correctly(): void

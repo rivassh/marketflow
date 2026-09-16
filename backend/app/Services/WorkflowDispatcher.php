@@ -98,10 +98,12 @@ class WorkflowDispatcher
 
     protected function buildAlertMessage(Watch $watch, $normalized): string
     {
-        $type = WorkflowType::tryFrom($watch->workflow_type);
-        $label = $type?->label() ?? 'هشدار';
-        
-        return "{$label} برای {$normalized->title}: {$normalized->price['display'] ?? 'ناشناخته'}";
+        $type = $watch->workflow_type;
+        $typeEnum = $type instanceof WorkflowType ? $type : WorkflowType::tryFrom((string) $type);
+        $label = $typeEnum?->label() ?? 'هشدار';
+        $priceDisplay = $normalized->price['display'] ?? 'ناشناخته';
+
+        return "{$label} برای {$normalized->title}: {$priceDisplay}";
     }
 
     protected function updateWatch(Watch $watch, $normalized): void

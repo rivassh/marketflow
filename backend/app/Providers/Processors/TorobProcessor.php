@@ -28,12 +28,11 @@ class TorobProcessor implements MarketplaceProvider
      */
     public function supports($url): bool
     {
-        // Match torob.com product URLs
+        // Match torob.com product URLs (requires slug after ID)
         return preg_match(
-            '/^https?:\/\/torob\.com\/p\/\d+\/[a-z0-9-]+\/.*$/i',
-            $url,
-            $matches
-        ) !== false;
+            '|^https?://torob\.com/p/\d+[a-z0-9-]+/|i',
+            $url
+        ) > 0;
     }
 
     /**

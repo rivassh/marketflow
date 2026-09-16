@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ProductPriceAlertController;
+use App\Http\Controllers\WatchController;
+use App\Http\Controllers\ObservationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,17 +18,14 @@ use App\Http\Controllers\ProductPriceAlertController;
 |
 */
 
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout']);
-Route::get('/user', [AuthController::class, 'user'])
-    ->middleware('auth:sanctum');
+Route::post('/auth/register', [AuthController::class, 'register']);
+Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+Route::get('/auth/user', [AuthController::class, 'user'])->middleware('auth:sanctum');
 Route::post('/admin/register', [AdminController::class, 'register']);
 Route::post('/admin/login', [AdminController::class, 'login']);
-Route::post('/admin/logout', [AdminController::class, 'logout'])
-    ->middleware('auth:sanctum');
-Route::get('/admin/user', [AdminController::class, 'user'])
-    ->middleware('auth:sanctum');
+Route::post('/admin/logout', [AdminController::class, 'logout'])->middleware('auth:sanctum');
+Route::get('/admin/user', [AdminController::class, 'user'])->middleware('auth:sanctum');
 
 /*
 |--------------------------------------------------------------------------
@@ -40,4 +39,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/product-price-alerts/{id}', [ProductPriceAlertController::class, 'show']);
     Route::put('/product-price-alerts/{id}', [ProductPriceAlertController::class, 'update']);
     Route::delete('/product-price-alerts/{id}', [ProductPriceAlertController::class, 'destroy']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Watch Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/watches', [WatchController::class, 'index']);
+    Route::post('/watches', [WatchController::class, 'store']);
+    Route::get('/watches/{id}', [WatchController::class, 'show']);
+    Route::put('/watches/{id}', [WatchController::class, 'update']);
+    Route::delete('/watches/{id}', [WatchController::class, 'destroy']);
+    Route::get('/watches/{id}/observations', [ObservationController::class, 'index']);
 });

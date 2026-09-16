@@ -1,17 +1,22 @@
 {
-  "name": "frontend",
+  "name": "marketflow-frontend",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "nuxt dev",
     "build": "nuxt build",
-    "preview": "nuxt preview"
+    "preview": "nuxt preview",
+    "generate": "nuxt generate"
   },
-        "jiti": "^1.21.7",
+  "dependencies": {
+    "@nuxtjs/tailwindcss": "6.11.0",
+    "@pinia/nuxt": "^0.5.1",
+    "jiti": "^1.21.7",
     "nuxt": "3.12.1",
+    "pinia": "^2.1.7",
+    "vite": "^5.0.0",
     "vue": "3.4.38",
-    "vue-router": "4.4.5",
-    "@nuxtjs/tailwindcss": "6.11.0"
+    "vue-router": "4.4.5"
   }
 }

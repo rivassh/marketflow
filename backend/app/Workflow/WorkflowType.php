@@ -25,7 +25,7 @@ enum WorkflowType: string
             self::SELLER_ALERT => 'هشدار فروشنده',
             self::JSON_FIELD_ALERT => 'هشدار فیلд JSON',
             self::HTML_SELECTOR_ALERT => 'هشدار انتخابگر HTML',
-            self::COMPOSITE-alert => 'هشدار ترکیبی',
+            self::COMPOSITE_ALERT => 'هشدار ترکیبی',
         };
     }
 

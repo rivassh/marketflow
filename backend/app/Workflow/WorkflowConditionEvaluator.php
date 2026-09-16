@@ -9,21 +9,26 @@ class WorkflowConditionEvaluator
 {
     public function evaluate(NormalizedProductData $data, array $conditions): bool
     {
-        $results = [];
+        $logicalOps = ['AND', 'OR', 'XOR', 'NOT'];
 
-        foreach ($conditions as $condition) {
-            $result = $this->evaluateCondition($data, $condition);
-            $results[] = $result;
-        }
+        // Filter out logical operators - they don't evaluate conditions
+        $actualConditions = array_filter($conditions, function($c) use ($logicalOps) {
+            return !in_array(strtoupper($c['operator'] ?? ''), $logicalOps);
+        });
 
-        if (empty($conditions)) {
+        if (empty($actualConditions)) {
             return true;
         }
 
-        $logicalOps = ['AND', 'OR', 'XOR', 'NOT'];
-        $lastOp = end($conditions)['operator'] ?? 'AND';
+        $results = [];
+        foreach ($actualConditions as $condition) {
+            $results[] = $this->evaluateCondition($data, $condition);
+        }
 
-        if (count($conditions) === 1) {
+        // Use the last actual condition's operator for aggregation
+        $lastOp = end($actualConditions)['operator'] ?? 'AND';
+
+        if (count($results) === 1) {
             return reset($results);
         }
 
@@ -50,6 +55,11 @@ class WorkflowConditionEvaluator
         $operator = $condition['operator'] ?? 'equals';
         $value = $condition['value'] ?? $condition['json_path'] ?? null;
         $expectedValue = $condition['expected_value'] ?? null;
+
+        // Handle logical operators (OR, AND, XOR, NOT) - they aggregate results, not compare
+        if (in_array(strtoupper($operator), ['AND', 'OR', 'XOR', 'NOT'])) {
+            return false;
+        }
 
         return match ($operator) {
             'equals' => $this->equals($data, $value, $expectedValue),

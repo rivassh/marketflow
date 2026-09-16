@@ -32,6 +32,7 @@ class Watch extends Model
         'is_tracked' => 'boolean',
         'alert_count' => 'integer',
         'price_history' => 'array',
+        'product_ref' => 'array',
         'workflow_type' => WorkflowType::class,
     ];
 

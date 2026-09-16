@@ -1,0 +1,28 @@
+Act as a Senior Laravel 13 & DevOps Engineer. Complete the implementation of our Industry-Agnostic ERP system using an Action-Based Architecture. Strictly follow SOLID, DRY, KISS, and ACID principles. DO NOT use the Repository Pattern. 
+
+Context:
+- Stack: Laravel 13, PHP 8.3, MySQL 8, Pest PHP, Filament 3.
+- Database: Core tables exist (`parties`, `assets`, `ownerships`, `contracts`, `financial_transactions`, `line_items`, `schedules`).
+- Architecture: Polymorphic relations for `ownerships` and `line_items`. Strict Immutability for financials (double-entry bookkeeping, no updates/deletes on transactions).
+
+Tasks to execute step-by-step:
+
+1. Financial Core Actions (with Pest Tests):
+- Create `App\Actions\Financial\ProcessLedgerTransaction`: Must implement double-entry logic (credit == debit) using `DB::transaction`.
+- Create `App\Actions\Financial\ReverseTransaction`: Must create compensating entries to reverse a transaction without deleting or mutating the original record.
+- Write strict Pest Feature tests for both actions to ensure ACID compliance and immutability.
+
+2. Operational Actions:
+- Create `App\Actions\Operations\ProcessInvoice`: Generate an invoice, attach `line_items` polymorphically, and trigger `ProcessLedgerTransaction` automatically.
+- Create `App\Actions\Operations\ProcessStockMovement`: Handle polymorphic movement of `Assets` between `Parties` (e.g., Warehouse to Customer).
+
+3. Filament 3 Admin Panel:
+- Install and configure Filament v3 if not already done.
+- Generate Filament Resources (List, Create, Edit, View) for:
+  - `PartyResource`
+  - `AssetResource`
+  - `ContractResource`
+  - `FinancialTransactionResource` (Read-only view for transactions, no edit/delete allowed).
+
+Ensure all Actions extend a `BaseAction` class that wraps execution in database transactions. Return the complete code for the Actions, Pest tests, and Filament Resources.
+

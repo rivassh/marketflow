@@ -2,10 +2,11 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   
-  // Bypass impound restrictions for critical modules
-  nitro: {
-    server: {
-      allowedImports: ['std-env', 'node-mock-http', 'uncrypto', 'iron-webcrypto']
+  modules: ['@pinia/nuxt', '@nuxtjs/tailwindcss'],
+  
+  runtimeConfig: {
+    public: {
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'https://torob.adlr.ir/api'
     }
   },
   
