@@ -2,6 +2,8 @@
 
 namespace Tests\Unit;
 
+use App\Workflow\Condition;
+use App\Workflow\ConditionOperator;
 use App\Workflow\WorkflowConditionEvaluator;
 use App\Providers\DTOs\NormalizedProductData;
 use PHPUnit\Framework\TestCase;
@@ -133,24 +135,22 @@ class WorkflowConditionEvaluatorTest extends TestCase
 
     public function test_or_logic_with_multiple_conditions(): void
     {
-        // The last actual condition's operator determines the aggregation
-        // When the last condition's operator is "OR", it means OR logic for combining
-        // So if any of the conditions match, the result is true
         $conditions = [
-            ['operator' => 'less_than', 'value' => 'price.amount', 'expected_value' => 5000000], // false
-            ['operator' => 'OR', 'value' => 'availability', 'expected_value' => 'available'], // logical op
+            ['operator' => 'less_than', 'value' => 'price.amount', 'expected_value' => 5000000],
+            ['operator' => 'OR', 'value' => 'availability', 'expected_value' => 'available'],
+            ['operator' => 'equals', 'value' => 'availability', 'expected_value' => 'available'],
         ];
         $result = $this->evaluator->evaluate($this->data, $conditions);
-        // This should still aggregate properly
-        $this->assertTrue($result || !$result); // always true - we just want to verify it doesn't error
+        $this->assertTrue($result);
     }
 
     public function test_get_value_returns_null_for_nonexistent_path(): void
     {
-        $reflection = new \ReflectionMethod($this->evaluator, 'getValue');
+        $reflection = new \ReflectionMethod($this->evaluator, 'resolveValue');
         $reflection->setAccessible(true);
-        $result = $reflection->invoke($this->evaluator, $this->data, 'nonexistent.path');
-        $this->assertNull($result);
+        $registry = new \App\Workflow\ConditionEvaluatorRegistry();
+        $result = $registry->evaluate(ConditionOperator::EQUALS, $this->data, 'nonexistent.path', 'test');
+        $this->assertFalse($result);
     }
 
     public function test_not_equals_operator_returns_true_when_values_differ(): void
@@ -165,5 +165,54 @@ class WorkflowConditionEvaluatorTest extends TestCase
         $conditions = [['operator' => 'not_equals', 'value' => 'availability', 'expected_value' => 'available']];
         $result = $this->evaluator->evaluate($this->data, $conditions);
         $this->assertFalse($result);
+    }
+
+    public function test_greater_than_or_equal_operator(): void
+    {
+        $conditions = [['operator' => 'greater_than_or_equal', 'value' => 'price.amount', 'expected_value' => 9500000]];
+        $result = $this->evaluator->evaluate($this->data, $conditions);
+        $this->assertTrue($result);
+    }
+
+    public function test_less_than_or_equal_operator(): void
+    {
+        $conditions = [['operator' => 'less_than_or_equal', 'value' => 'price.amount', 'expected_value' => 9500000]];
+        $result = $this->evaluator->evaluate($this->data, $conditions);
+        $this->assertTrue($result);
+    }
+
+    public function test_not_contains_operator(): void
+    {
+        $conditions = [['operator' => 'not_contains', 'value' => 'title', 'expected_value' => 'Samsung']];
+        $result = $this->evaluator->evaluate($this->data, $conditions);
+        $this->assertTrue($result);
+    }
+
+    public function test_starts_with_operator(): void
+    {
+        $conditions = [['operator' => 'starts_with', 'value' => 'title', 'expected_value' => 'iPhone']];
+        $result = $this->evaluator->evaluate($this->data, $conditions);
+        $this->assertTrue($result);
+    }
+
+    public function test_ends_with_operator(): void
+    {
+        $conditions = [['operator' => 'ends_with', 'value' => 'title', 'expected_value' => 'Pro']];
+        $result = $this->evaluator->evaluate($this->data, $conditions);
+        $this->assertTrue($result);
+    }
+
+    public function test_exists_operator(): void
+    {
+        $conditions = [['operator' => 'exists', 'value' => 'availability', 'expected_value' => null]];
+        $result = $this->evaluator->evaluate($this->data, $conditions);
+        $this->assertTrue($result);
+    }
+
+    public function test_not_exists_operator(): void
+    {
+        $conditions = [['operator' => 'not_exists', 'value' => 'nonexistent', 'expected_value' => null]];
+        $result = $this->evaluator->evaluate($this->data, $conditions);
+        $this->assertTrue($result);
     }
 }

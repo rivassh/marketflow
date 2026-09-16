@@ -3,145 +3,80 @@
 namespace App\Workflow;
 
 use App\Providers\DTOs\NormalizedProductData;
-use Illuminate\Support\Str;
 
 class WorkflowConditionEvaluator
 {
+    protected ConditionEvaluatorRegistry $registry;
+
+    public function __construct(?ConditionEvaluatorRegistry $registry = null)
+    {
+        $this->registry = $registry ?? new ConditionEvaluatorRegistry();
+    }
+
     public function evaluate(NormalizedProductData $data, array $conditions): bool
     {
-        $logicalOps = ['AND', 'OR', 'XOR', 'NOT'];
+        if (empty($conditions)) {
+            return true;
+        }
 
-        // Filter out logical operators - they don't evaluate conditions
-        $actualConditions = array_filter($conditions, function($c) use ($logicalOps) {
-            return !in_array(strtoupper($c['operator'] ?? ''), $logicalOps);
-        });
+        $parsedConditions = array_map(fn($c) => is_array($c) ? Condition::fromArray($c) : $c, $conditions);
 
-        if (empty($actualConditions)) {
+        return $this->evaluateGroup($data, $parsedConditions, 'AND');
+    }
+
+    protected function evaluateGroup(NormalizedProductData $data, array $conditions, string $groupOperator): bool
+    {
+        if (empty($conditions)) {
             return true;
         }
 
         $results = [];
-        foreach ($actualConditions as $condition) {
+        foreach ($conditions as $condition) {
+            if ($condition instanceof Condition && $this->isLogicalOperator($condition->operator)) {
+                continue;
+            }
+
             $results[] = $this->evaluateCondition($data, $condition);
         }
 
-        // Use the last actual condition's operator for aggregation
-        $lastOp = end($actualConditions)['operator'] ?? 'AND';
+        if (empty($results)) {
+            return true;
+        }
 
         if (count($results) === 1) {
             return reset($results);
         }
 
-        $aggregate = reset($results);
-        $remaining = array_slice($results, 1);
-
-        foreach ($remaining as $result) {
-            if ($lastOp === 'AND') {
-                $aggregate = $aggregate && $result;
-            } elseif ($lastOp === 'OR') {
-                $aggregate = $aggregate || $result;
-            } elseif ($lastOp === 'XOR') {
-                $aggregate = $aggregate !== $result;
-            } elseif ($lastOp === 'NOT') {
-                $aggregate = !$aggregate;
-            }
-        }
-
-        return $aggregate;
+        return $this->aggregateResults($results, $groupOperator);
     }
 
-    protected function evaluateCondition(NormalizedProductData $data, array $condition): bool
+    protected function evaluateCondition(NormalizedProductData $data, Condition|array $condition): bool
     {
-        $operator = $condition['operator'] ?? 'equals';
-        $value = $condition['value'] ?? $condition['json_path'] ?? null;
-        $expectedValue = $condition['expected_value'] ?? null;
+        if (is_array($condition)) {
+            $condition = Condition::fromArray($condition);
+        }
 
-        // Handle logical operators (OR, AND, XOR, NOT) - they aggregate results, not compare
-        if (in_array(strtoupper($operator), ['AND', 'OR', 'XOR', 'NOT'])) {
+        $operator = ConditionOperator::tryFrom($condition->operator);
+        if (!$operator) {
             return false;
         }
 
-        return match ($operator) {
-            'equals' => $this->equals($data, $value, $expectedValue),
-            'not_equals' => !$this->equals($data, $value, $expectedValue),
-            'greater_than' => $this->greaterThan($data, $value, $expectedValue),
-            'less_than' => $this->lessThan($data, $value, $expectedValue),
-            'between' => $this->between($data, $value, $expectedValue),
-            'contains' => $this->contains($data, $value, $expectedValue),
-            'matches_regex' => $this->matchesRegex($data, $value, $expectedValue),
-            default => false,
+        return $this->registry->evaluate($operator, $data, $condition->field, $condition->value);
+    }
+
+    protected function aggregateResults(array $results, string $operator): bool
+    {
+        return match (strtoupper($operator)) {
+            'AND' => !in_array(false, $results, true),
+            'OR' => in_array(true, $results, true),
+            'XOR' => count(array_keys($results, true)) % 2 !== 0,
+            'NOT' => count($results) === 1 ? !$results[0] : false,
+            default => !in_array(false, $results, true),
         };
     }
 
-    protected function getValue(NormalizedProductData $data, string $path): mixed
+    protected function isLogicalOperator(string $operator): bool
     {
-        $keys = explode('.', $path);
-        $current = $data;
-
-        foreach ($keys as $key) {
-            if (is_object($current) && isset($current->$key)) {
-                $current = $current->$key;
-            } elseif (is_array($current) && isset($current[$key])) {
-                $current = $current[$key];
-            } else {
-                return null;
-            }
-        }
-
-        return $current;
-    }
-
-    protected function equals(mixed $data, mixed $path, mixed $expected): bool
-    {
-        if ($data instanceof NormalizedProductData) {
-            $value = $this->getValue($data, $path);
-            return $value == $expected || $value === $expected;
-        }
-        return false;
-    }
-
-    protected function greaterThan(NormalizedProductData $data, string $path, mixed $threshold): bool
-    {
-        $value = $this->getValue($data, $path);
-        if (is_numeric($value) && is_numeric($threshold)) {
-            return $value > $threshold;
-        }
-        return false;
-    }
-
-    protected function lessThan(NormalizedProductData $data, string $path, mixed $threshold): bool
-    {
-        $value = $this->getValue($data, $path);
-        if (is_numeric($value) && is_numeric($threshold)) {
-            return $value < $threshold;
-        }
-        return false;
-    }
-
-    protected function between(NormalizedProductData $data, string $path, array $range): bool
-    {
-        $value = $this->getValue($data, $path);
-        if (is_numeric($value) && is_array($range) && count($range) === 2) {
-            return $value >= $range[0] && $value <= $range[1];
-        }
-        return false;
-    }
-
-    protected function contains(NormalizedProductData $data, string $path, string $needle): bool
-    {
-        $value = $this->getValue($data, $path);
-        if (is_string($value)) {
-            return Str::contains($value, $needle);
-        }
-        return false;
-    }
-
-    protected function matchesRegex(NormalizedProductData $data, string $path, string $pattern): bool
-    {
-        $value = $this->getValue($data, $path);
-        if (is_string($value)) {
-            return (bool) preg_match($pattern, $value);
-        }
-        return false;
+        return in_array(strtoupper($operator), ['AND', 'OR', 'XOR', 'NOT'], true);
     }
 }
