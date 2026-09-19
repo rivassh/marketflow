@@ -2,7 +2,7 @@
 
 namespace App\Services\NotificationChannels;
 
-class ConfigurableIranianSmsChannel implements NotificationChannel
+class ConfigurableIranianSmsChannel implements NotificationChannelInterface
 {
     protected string $apiUrl;
     protected string $apiKey;

@@ -2,7 +2,7 @@
 
 namespace App\Services\NotificationChannels;
 
-class FakeSmsChannel implements NotificationChannel
+class FakeSmsChannel implements NotificationChannelInterface
 {
     public function send(string $recipient, string $message): DeliveryResult
     {

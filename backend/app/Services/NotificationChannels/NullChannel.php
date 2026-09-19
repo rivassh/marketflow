@@ -2,7 +2,7 @@
 
 namespace App\Services\NotificationChannels;
 
-class NullChannel implements NotificationChannel
+class NullChannel implements NotificationChannelInterface
 {
     public function send(string $recipient, string $message): DeliveryResult
     {

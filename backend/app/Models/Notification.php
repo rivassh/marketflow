@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Notification extends Model
 {
-    use HasFactory;
+    protected $table = 'notifications';
 
     protected $fillable = [
         'user_id',
@@ -26,63 +26,35 @@ class Notification extends Model
     ];
 
     protected $casts = [
-        'user_id' => 'integer',
-        'watch_id' => 'integer',
-        'alert_event_id' => 'integer',
-        'channel' => 'string',
-        'recipient' => 'string',
-        'template' => 'string',
         'payload' => 'array',
-        'status' => 'string',
-        'provider_message_id' => 'string',
         'sent_at' => 'datetime',
         'failed_at' => 'datetime',
-        'failure_reason' => 'string',
         'attempts' => 'integer',
     ];
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function watch()
+    public function watch(): BelongsTo
     {
         return $this->belongsTo(Watch::class);
     }
 
-    public function alertEvent()
+    public function alertEvent(): BelongsTo
     {
         return $this->belongsTo(AlertEvent::class);
     }
 
-    public function states(): array
-    {
-        return [
-            'pending',
-            'sent',
-            'failed',
-            'cancelled',
-        ];
-    }
-
-    public function isTerminal(): bool
-    {
-        return in_array($this->status, ['sent', 'failed', 'cancelled'], true);
-    }
-
-    public function incrementAttempts(): void
-    {
-        $this->increment('attempts');
-        $this->save();
-    }
-
-    public function markAsSent(string $providerMessageId = null): void
+    public function markAsSent(?string $providerMessageId = null): void
     {
         $this->update([
             'status' => 'sent',
             'provider_message_id' => $providerMessageId,
             'sent_at' => now(),
+            'failed_at' => null,
+            'failure_reason' => null,
         ]);
     }
 
@@ -90,8 +62,9 @@ class Notification extends Model
     {
         $this->update([
             'status' => 'failed',
-            'failure_reason' => $failureReason,
             'failed_at' => now(),
+            'failure_reason' => $failureReason,
+            'attempts' => $this->attempts + 1,
         ]);
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Services\NotificationChannels;
 
-interface NotificationChannel
+interface NotificationChannelInterface
 {
     public function send(string $recipient, string $message): DeliveryResult;
 
