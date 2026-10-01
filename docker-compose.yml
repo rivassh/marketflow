@@ -36,17 +36,17 @@ services:
       - sail
       - default
   
-  pgadmin4:
-    image: dpage/pgadmin4
-    container_name: pgadmin
-    ports:
-      - "5050:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=admin@marketflow
-      - PGADMIN_DEFAULT_PASSWORD=admin
-  
+#  pgadmin4:
+#    image: dpage/pgadmin4
+#    container_name: pgadmin
+#    ports:
+#      - "5050:80"
+#    volumes:
+#      - pgadmin_data:/var/lib/pgadmin
+#    environment:
+#      - PGADMIN_DEFAULT_EMAIL=admin@marketflow
+#      - PGADMIN_DEFAULT_PASSWORD=admin
+#  
   redis:
     image: redis:latest
     container_name: marketflow_redis
@@ -57,23 +57,7 @@ services:
     networks:
       - sail
       - default
-  
-  ws:
-    build: ./backend
-    container_name: marketflow_websockets
-    ports:
-      - "5656:5656"
-    command: php artisan websockets:serve
-    environment:
-      - PUSHER_APP_ID=${PUSHER_APP_ID:-default}
-      - PUSHER_APP_KEY=${PUSHER_APP_KEY:-default}
-      - PUSHER_APP_SECRET=${PUSHER_APP_SECRET:-default}
-    depends_on:
-      - backend
-    networks:
-      - sail
-      - default
-  
+
   db:
     image: postgres:15
     container_name: marketflow_db
@@ -91,7 +75,6 @@ services:
 
 volumes:
   postgres_data:
-  pgadmin_data:
   redis_data:
 
 networks:

@@ -13,7 +13,7 @@ return [
     | will be broadcast through the log, but not actually delivered.
     */
 
-    'default' => env('BROADCAST_DRIVER', 'pusher'),
+    'default' => env('BROADCAST_DRIVER', 'log'),
 
     /*
     |--------------------------------------------------------------------------

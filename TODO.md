@@ -8,5 +8,8 @@ every time take a todo task mve it to in_progress part after done move to done p
 # IN_PROGRESS
 
 # COMPLETED
-* review and report the status of project in compare of being production ready.
-* according to /opt/nginx-certbot/templates/domain-connection-guide.md deploy continue while deploy this project on torob.adlr.ir successfully.
+* Reviewed project status and production readiness
+* Created main branch and merged current work
+* Updated Nuxt dependency from 3.12.1 to 3.21.10 (dependabot)
+* Fixed production configuration in .env.example
+* Confirmed deployment at torob.adlr.ir is operational
