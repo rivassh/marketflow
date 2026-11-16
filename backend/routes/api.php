@@ -6,6 +6,7 @@ use App\Http\Controllers\ObservationController;
 use App\Http\Controllers\ProductPriceAlertController;
 use App\Http\Controllers\PurchaseIntentController;
 use App\Http\Controllers\PurchaseOrderController;
+use App\Http\Controllers\SiteActionController;
 use App\Http\Controllers\WatchController;
 use Illuminate\Support\Facades\Route;
 
@@ -70,4 +71,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('purchase-orders', PurchaseOrderController::class);
     Route::post('/purchase-orders/{id}/submit', [PurchaseOrderController::class, 'submit']);
     Route::post('/purchase-orders/{id}/approve', [PurchaseOrderController::class, 'approve']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Site Action Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/site-actions/plan', [SiteActionController::class, 'plan']);
+    Route::post('/site-actions/execute', [SiteActionController::class, 'execute']);
 });

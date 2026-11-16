@@ -17,6 +17,7 @@ every time take a todo task mve it to in_progress part after done move to done p
 * Phase 0: Stabilization blockers — all 8 items complete
 * Phase 1: Provider Layer (Torob + Divar) — all items complete
 * Phase 2: Purchase Domain (PurchaseIntent, PurchaseOrder, PurchaseItem) — all items complete
+* Phase 3: SiteAction Execution Layer — all items complete
 
 # PHASE 0 — Stabilization (blockers) — DONE
 - [x] 1. Fixed NotificationService::send() static/instance mismatch in WorkflowDispatcher and WorkflowAction
@@ -44,9 +45,12 @@ every time take a todo task mve it to in_progress part after done move to done p
 - [x] Audit log for every status change (who, when, what data)
 - [x] Feature test for full state cycle including unauthorized approve
 
-# PHASE 3 — SiteAction Execution Layer
-- [ ] SiteAction interface: supports(url), plan(context), execute(plan)
-- [ ] Playwright Node sidecar execution
-- [ ] Human-in-the-loop: plan returned for confirmation before execute
-- [ ] Captcha/OTP/payment = stop and escalate to user
-- [ ] First action: "Add product to Torob cart" dry-run
+# PHASE 3 — SiteAction Execution Layer — DONE
+- [x] SiteAction interface: supports(url), plan(context), execute(plan)
+- [x] SiteActionPlan + SiteActionResult DTOs
+- [x] TorobAddToCartAction: first real action (dry-run)
+- [x] Human-in-the-loop: plan returned for approval before execute
+- [x] Captcha/OTP/payment = stop and escalate to user (no bypass)
+- [x] Endpoints: POST /site-actions/plan + POST /site-actions/execute
+- [x] Tests: 6 tests covering plan, dry-run, captcha stop, unsupported URL, etc.
+- [ ] Playwright Node sidecar — deferred (dry-run only for now)
