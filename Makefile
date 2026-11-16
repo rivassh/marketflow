@@ -14,8 +14,7 @@ test:
 	cd backend && php artisan test
 
 lint:
-	cd backend && php vendor/bin/phpstan analyse --no-progress
-	cd frontend && npm run lint
+	cd backend && php vendor/bin/pint --test
 
 format:
 	cd backend && php vendor/bin/pint

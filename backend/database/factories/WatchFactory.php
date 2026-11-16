@@ -2,11 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use App\Models\Watch;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Watch>
+ * @extends Factory<Watch>
  */
 class WatchFactory extends Factory
 {
@@ -25,16 +26,16 @@ class WatchFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => \App\Models\User::factory()->create()->id,
-            'product_url' => 'https://torob.com/p/'.rand(1000,9999).'/product-name-review',
-            'product_ref' => ['provider' => 'torob', 'externalId' => (string) rand(1000,9999)],
+            'user_id' => User::factory()->create()->id,
+            'product_url' => 'https://torob.com/p/'.rand(1000, 9999).'/product-name-review',
+            'product_ref' => ['provider' => 'torob', 'externalId' => (string) rand(1000, 9999)],
             'workflow_type' => 'PRICE_BELOW_ALERT',
             'conditions' => [
                 [
                     'operator' => 'less_than',
                     'value' => 'price.amount',
                     'expected_value' => 10000000,
-                ]
+                ],
             ],
             'frequency_minutes' => 15,
             'is_active' => true,

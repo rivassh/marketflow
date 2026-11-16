@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 class DeduplicationService
 {
     protected int $dailyLimit;
+
     protected int $cooldownMinutes;
 
     public function __construct()
@@ -20,17 +21,19 @@ class DeduplicationService
 
     public function shouldSendNotification(Watch $watch): bool
     {
-        if (!$watch->shouldSendNotification()) {
+        if (! $watch->shouldSendNotification()) {
             return false;
         }
 
         if ($this->hasReachedDailyLimit($watch)) {
             Log::info('Daily notification limit reached', ['watch_id' => $watch->id]);
+
             return false;
         }
 
         if ($this->isInCooldown($watch)) {
             Log::info('Notification in cooldown period', ['watch_id' => $watch->id]);
+
             return false;
         }
 
@@ -55,14 +58,13 @@ class DeduplicationService
         if ($this->isDuplicate($eventKey)) {
             Log::info('Duplicate alert event skipped', [
                 'watch_id' => $watch->id,
-                'event_key' => $eventKey
+                'event_key' => $eventKey,
             ]);
             throw new \Exception("Duplicate alert event: {$eventKey}");
         }
 
         $alertEvent = AlertEvent::create([
             'watch_id' => $watch->id,
-            'workflow_id' => null,
             'event_key' => $eventKey,
             'state' => $state,
             'triggered_at' => now(),
@@ -77,7 +79,8 @@ class DeduplicationService
     public function getTodayNotificationCount(int $userId): int
     {
         $todayStart = now()->startOfDay();
-        return AlertEvent::whereHas('watch', fn($q) => $q->where('user_id', $userId))
+
+        return AlertEvent::whereHas('watch', fn ($q) => $q->where('user_id', $userId))
             ->where('triggered_at', '>=', $todayStart)
             ->where('state', 'notification_sent')
             ->count();
@@ -86,13 +89,14 @@ class DeduplicationService
     protected function hasReachedDailyLimit(Watch $watch): bool
     {
         $count = $this->getTodayNotificationCount($watch->user_id);
+
         return $count >= $this->dailyLimit;
     }
 
     protected function isInCooldown(Watch $watch): bool
     {
         $latest = $watch->latestAlertEvent();
-        if (!$latest || $latest->state !== 'notification_sent') {
+        if (! $latest || $latest->state !== 'notification_sent') {
             return false;
         }
 

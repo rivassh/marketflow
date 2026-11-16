@@ -17,11 +17,12 @@ RUN docker-php-ext-install \
     opcache \
     pcntl
 
+RUN pecl install redis-6.1.0 && docker-php-ext-enable redis
+
 RUN curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php && \
     php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer && \
     rm /tmp/composer-setup.php
 
-# Configure PHP to suppress deprecation warnings (works for PHP 8.0+)
 RUN { \
     echo "error_reporting = E_ALL & ~E_DEPRECATED & ~E_WARNING"; \
     echo "display_errors = Off"; \

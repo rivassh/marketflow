@@ -13,7 +13,7 @@ class RedisPersistenceServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new RedisPersistenceService();
+        $this->service = new RedisPersistenceService;
     }
 
     public function test_service_uses_marketflow_prefix(): void
@@ -31,6 +31,7 @@ class RedisPersistenceServiceTest extends TestCase
             ->once()
             ->withArgs(function ($key, $ttl, $value) {
                 $data = json_decode($value, true);
+
                 return $key === 'marketflow:price_alert:123'
                     && $ttl === 300
                     && $data['price'] === 9500000;

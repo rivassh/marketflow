@@ -2,15 +2,11 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
+use App\Providers\DTOs\ProductReference;
+use App\Providers\DTOs\ProviderProductSnapshot;
 use App\Providers\Processors\TorobProcessor;
-use App\Providers\DTOs\{
-    ProductReference,
-    ProviderProductSnapshot,
-    NormalizedProductData
-};
 use Illuminate\Support\Facades\Http;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class TorobProcessorTest extends TestCase
 {
@@ -19,7 +15,7 @@ class TorobProcessorTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->processor = new TorobProcessor();
+        $this->processor = new TorobProcessor;
     }
 
     public function test_it_supports_torob_urls(): void
@@ -55,20 +51,20 @@ class TorobProcessorTest extends TestCase
                 'product' => [
                     'title' => 'آیفون ۱۴ پرو',
                     'brand' => 'Apple',
-                    'model' => 'iPhone 14 Pro'
+                    'model' => 'iPhone 14 Pro',
                 ],
                 'price' => [
                     'amount' => 9500000,
                     'currency' => 'IRR',
-                    'display' => '۹.۵ میلیون تومان'
+                    'display' => '۹.۵ میلیون تومان',
                 ],
                 'availability' => 'available',
                 'stock_status' => 'موجود',
                 'seller' => [
                     'name' => 'فروشگاه تکنولوژی',
-                    'url' => 'https://torob.com/seller/123'
-                ]
-            ], 200)
+                    'url' => 'https://torob.com/seller/123',
+                ],
+            ], 200),
         ]);
 
         $snapshot = $this->processor->fetchProduct($reference);
@@ -95,11 +91,11 @@ class TorobProcessorTest extends TestCase
                 ],
                 'price' => [
                     'amount' => 0,
-                    'currency' => 'IRR'
+                    'currency' => 'IRR',
                 ],
                 'availability' => 'unavailable',
-                'stock_status' => 'ناموجود'
-            ], 200)
+                'stock_status' => 'ناموجود',
+            ], 200),
         ]);
 
         $normalized = $this->processor->normalizeSnapshot(

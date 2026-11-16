@@ -2,7 +2,9 @@
 
 namespace App\Providers\Interfaces;
 
-use App\Providers\DTOs\{ProductReference, ProviderProductSnapshot, NormalizedProductData};
+use App\Providers\DTOs\NormalizedProductData;
+use App\Providers\DTOs\ProductReference;
+use App\Providers\DTOs\ProviderProductSnapshot;
 
 interface MarketplaceProvider
 {

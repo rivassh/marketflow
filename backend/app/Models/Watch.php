@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use App\Workflow\WorkflowType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Workflow\WorkflowType;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Watch extends Model
 {
@@ -21,6 +21,7 @@ class Watch extends Model
         'user_id',
         'is_active',
         'last_checked_at',
+        'next_check_at',
         'is_tracked',
         'alert_count',
         'price_history',
@@ -31,6 +32,7 @@ class Watch extends Model
         'frequency_minutes' => 'integer',
         'is_active' => 'boolean',
         'last_checked_at' => 'datetime',
+        'next_check_at' => 'datetime',
         'is_tracked' => 'boolean',
         'alert_count' => 'integer',
         'price_history' => 'array',
@@ -60,11 +62,16 @@ class Watch extends Model
 
     public function shouldCheck(): bool
     {
-        if (!$this->is_active || !$this->is_tracked) {
+        if (! $this->is_active || ! $this->is_tracked) {
             return false;
         }
 
-        return !$this->last_checked_at ||
+        if ($this->next_check_at !== null) {
+            return $this->next_check_at->isPast();
+        }
+
+        // Fallback for legacy records without next_check_at
+        return ! $this->last_checked_at ||
                $this->last_checked_at->addMinutes($this->frequency_minutes)->isPast();
     }
 
@@ -78,7 +85,7 @@ class Watch extends Model
         $latest = $this->latestAlertEvent();
 
         // No prior events — always allow
-        if (!$latest) {
+        if (! $latest) {
             return true;
         }
 
@@ -106,10 +113,10 @@ class Watch extends Model
 
     public function getEventKey(string $conditionState): string
     {
-        return sha256(
-            $this->id .
-            $this->workflow_type?->value ?? '' .
-            $conditionState .
+        return hash('sha256',
+            $this->id.
+            $this->workflow_type?->value ?? ''.
+            $conditionState.
             $this->last_checked_at?->toIso8601String() ?? ''
         );
     }

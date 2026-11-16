@@ -4,10 +4,8 @@ namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Broadcasting\BroadcastEvent;
-use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 class PriceAlertTriggered implements ShouldBroadcast
@@ -15,6 +13,7 @@ class PriceAlertTriggered implements ShouldBroadcast
     use Dispatchable, SerializesModels;
 
     public $alert;
+
     public $message;
 
     public function __construct($alert, $message)
@@ -31,7 +30,7 @@ class PriceAlertTriggered implements ShouldBroadcast
     public function broadcastOn()
     {
         // Private channel that requires authentication
-        return new PrivateChannel('price-alerts.' . $this->alert->id);
+        return new PrivateChannel('price-alerts.'.$this->alert->id);
     }
 
     /**

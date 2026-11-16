@@ -2,9 +2,6 @@
 
 namespace App\Services;
 
-use App\Services\NotificationChannels\DeliveryResult;
-use App\Services\NotificationChannels\NotificationChannelInterface as NotificationChannel;
-use App\Services\NotificationChannels\ChannelRegistry;
 use App\Models\Notification;
 use Illuminate\Support\Facades\Log;
 
@@ -20,7 +17,7 @@ class NotificationService
     /**
      * Send a notification via configured channels
      */
-    public function send(string $userId, string $recipient, string $message, string $template = null): void
+    public function send(string $userId, string $recipient, string $message, ?string $template = null): void
     {
         // Log notification for audit trail
         Log::info('Preparing to send notification', [
@@ -43,10 +40,11 @@ class NotificationService
 
         // Try sending via configured channels
         $channels = $this->channelRegistry->getConfiguredChannels();
-        
+
         if (empty($channels)) {
             $notification->markAsFailed('No notification channels configured');
             Log::warning('No notification channels configured', ['notification_id' => $notification->id]);
+
             return;
         }
 
@@ -54,7 +52,7 @@ class NotificationService
         foreach ($channels as $channel) {
             try {
                 $result = $channel->send($recipient, $message);
-                
+
                 if ($result->success) {
                     $notification->markAsSent($result->providerMessageId);
                     $success = true;
@@ -80,7 +78,7 @@ class NotificationService
             }
         }
 
-        if (!$success) {
+        if (! $success) {
             $notification->markAsFailed('All notification channels failed');
             Log::error('All notification channels failed', [
                 'notification_id' => $notification->id,
@@ -96,6 +94,6 @@ class NotificationService
     {
         // This maintains backward compatibility for database notifications
         \Illuminate\Support\Facades\Notification::route('user', $userId)
-            ->notify(new \App\Services\NotificationMessage($message));
+            ->notify(new NotificationMessage($message));
     }
 }

@@ -3,9 +3,8 @@
 namespace App\Listeners;
 
 use App\Events\PriceAlertTriggered;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\Log;
 
 class PriceAlertTriggeredListener
 {
@@ -31,7 +30,7 @@ class PriceAlertTriggeredListener
         ]);
 
         // Broadcast the event
-        Broadcast::to('price-alerts.' . $event->alert->id)
+        Broadcast::to('price-alerts.'.$event->alert->id)
             ->event(new PriceAlertTriggered($event->alert, $event->message));
 
         // Optionally: Send SMS notification

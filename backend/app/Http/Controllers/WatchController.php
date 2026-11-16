@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Watch;
-use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 use App\Providers\Processors\TorobProcessor;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class WatchController extends Controller
 {
@@ -23,13 +24,13 @@ class WatchController extends Controller
                 'last_page' => $watches->lastPage(),
                 'per_page' => $watches->perPage(),
                 'total' => $watches->total(),
-            ]
+            ],
         ]);
     }
 
     public function store(Request $request)
     {
-        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'product_url' => ['required', 'string', 'max:2048'],
             'workflow_type' => ['required', 'string', 'in:PRICE_RANGE_ALERT,PRICE_BELOW_ALERT,PRICE_ABOVE_ALERT,AVAILABILITY_ALERT,STOCK_STATUS_ALERT,SELLER_ALERT,JSON_FIELD_ALERT,HTML_SELECTOR_ALERT,COMPOSITE_ALERT'],
             'conditions' => ['required', 'array'],
@@ -40,10 +41,10 @@ class WatchController extends Controller
             throw ValidationException::withMessages($validator->errors()->toArray());
         }
 
-        $processor = new TorobProcessor();
-        if (!$processor->supports($request->product_url)) {
+        $processor = new TorobProcessor;
+        if (! $processor->supports($request->product_url)) {
             throw ValidationException::withMessages([
-                'product_url' => ['The product URL is not supported. Please provide a valid torob.com URL.']
+                'product_url' => ['The product URL is not supported. Please provide a valid torob.com URL.'],
             ]);
         }
 
@@ -59,7 +60,7 @@ class WatchController extends Controller
 
         return response()->json([
             'message' => 'Watch created successfully',
-            'data' => $watch
+            'data' => $watch,
         ], 201);
     }
 
@@ -78,7 +79,7 @@ class WatchController extends Controller
             ->where('user_id', $request->user()->id)
             ->firstOrFail();
 
-        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'product_url' => ['sometimes', 'string', 'max:2048'],
             'workflow_type' => ['sometimes', 'string'],
             'conditions' => ['sometimes', 'array'],
@@ -95,7 +96,7 @@ class WatchController extends Controller
 
         return response()->json([
             'message' => 'Watch updated successfully',
-            'data' => $watch
+            'data' => $watch,
         ]);
     }
 

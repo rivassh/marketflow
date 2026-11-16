@@ -3,12 +3,11 @@
 namespace App\Services\NotificationChannels;
 
 use Illuminate\Notifications\Notification as LaravelNotification;
-use Illuminate\Notifications\Messages\BroadcastMessage;
-use App\Services\NotificationChannels\NotificationChannelInterface;
 
 class LaravelSmsChannel extends LaravelNotification
 {
     protected string $recipient;
+
     protected string $message;
 
     public function __construct(string $recipient, string $message)

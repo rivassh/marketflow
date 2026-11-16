@@ -65,9 +65,9 @@ class WorkflowTypeTest extends TestCase
         $expectedCases = [
             'PRICE_RANGE_ALERT', 'PRICE_BELOW_ALERT', 'PRICE_ABOVE_ALERT',
             'AVAILABILITY_ALERT', 'STOCK_STATUS_ALERT', 'SELLER_ALERT',
-            'JSON_FIELD_ALERT', 'HTML_SELECTOR_ALERT', 'COMPOSITE_ALERT'
+            'JSON_FIELD_ALERT', 'HTML_SELECTOR_ALERT', 'COMPOSITE_ALERT',
         ];
-        $actualCases = array_map(fn($c) => $c->name, WorkflowType::cases());
+        $actualCases = array_map(fn ($c) => $c->name, WorkflowType::cases());
         sort($expectedCases);
         sort($actualCases);
         $this->assertEquals($expectedCases, $actualCases);

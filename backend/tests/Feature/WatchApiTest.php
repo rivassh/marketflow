@@ -2,11 +2,10 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\Watch;
 use App\Models\User;
-use App\Workflow\WorkflowType;
+use App\Models\Watch;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class WatchApiTest extends TestCase
 {

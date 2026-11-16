@@ -2,13 +2,15 @@
 
 namespace App\Workflow;
 
-use Illuminate\Support\Facades\Log;
 use App\Services\NotificationService;
+use Illuminate\Support\Facades\Log;
 
 abstract class WorkflowAction
 {
     protected WorkflowType $type;
+
     protected mixed $config;
+
     protected ?string $error = null;
 
     public function __construct(WorkflowType $type, mixed $config)
@@ -21,7 +23,7 @@ abstract class WorkflowAction
 
     public function validateConfig(): bool
     {
-        return !empty($this->config);
+        return ! empty($this->config);
     }
 
     public function getError(): ?string
@@ -29,14 +31,17 @@ abstract class WorkflowAction
         return $this->error;
     }
 
-    protected function triggerNotification(string $userId, string $message): bool
+    protected function triggerNotification(string $userId, string $recipient, string $message, ?string $template = null): bool
     {
         try {
-            NotificationService::send($userId, $message);
+            $service = app(NotificationService::class);
+            $service->send($userId, $recipient, $message, $template);
+
             return true;
         } catch (\Exception $e) {
             $this->error = $e->getMessage();
             Log::error('Workflow notification failed', ['error' => $e->getMessage()]);
+
             return false;
         }
     }

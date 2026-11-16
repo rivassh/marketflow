@@ -2,7 +2,6 @@
 
 namespace App\Modules\Catalog\Domain;
 
-use App\Modules\Catalog\ValueObjects\ProductReference;
 use App\Modules\Shared\ValueObjects\Price;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
@@ -10,14 +9,23 @@ use Illuminate\Support\Str;
 class Product
 {
     private ?int $id;
+
     private string $name;
+
     private string $slug;
+
     private ?string $brand;
+
     private ?string $model;
+
     private ?Price $currentPrice;
+
     private array $aliases = [];
+
     private array $metadata = [];
+
     private Carbon $createdAt;
+
     private Carbon $updatedAt;
 
     public function __construct(
@@ -43,9 +51,9 @@ class Product
             $data['brand'] ?? null,
             $data['model'] ?? null
         );
-        
+
         $product->id = $data['id'];
-        
+
         if (isset($data['current_price'])) {
             $price = $data['current_price'];
             if (is_array($price)) {
@@ -55,12 +63,12 @@ class Product
                 );
             }
         }
-        
+
         $product->aliases = $data['aliases'] ?? [];
         $product->metadata = $data['metadata'] ?? [];
         $product->createdAt = isset($data['created_at']) ? Carbon::parse($data['created_at']) : Carbon::now();
         $product->updatedAt = isset($data['updated_at']) ? Carbon::parse($data['updated_at']) : Carbon::now();
-        
+
         return $product;
     }
 
@@ -98,12 +106,14 @@ class Product
     {
         $this->currentPrice = $price;
         $this->updatedAt = Carbon::now();
+
         return $this;
     }
 
     public function addAlias(string $alias): self
     {
         $this->aliases[] = $alias;
+
         return $this;
     }
 
@@ -120,10 +130,11 @@ class Product
     public function addMetadata(string $key, mixed $value): self
     {
         $this->metadata[$key] = $value;
+
         return $this;
     }
 
-    public function getMetadata(string $key = null): mixed
+    public function getMetadata(?string $key = null): mixed
     {
         return $key ? ($this->metadata[$key] ?? null) : $this->metadata;
     }

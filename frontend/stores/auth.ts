@@ -21,17 +21,17 @@ export const useAuthStore = defineStore('auth', {
     loading: false,
     error: null,
   }),
-  
+
   getters: {
     isAuthenticated: (state) => !!state.token,
     currentUser: (state) => state.user,
   },
-  
+
   actions: {
     async register(credentials: { name: string; mobile: string; password: string; password_confirmation: string }) {
       this.loading = true
       this.error = null
-      
+
       try {
         const config = useRuntimeConfig()
         const response = await $fetch<{ user: User; message: string }>('/auth/register', {
@@ -39,7 +39,7 @@ export const useAuthStore = defineStore('auth', {
           method: 'POST',
           body: credentials,
         })
-        
+
         return response
       } catch (err: any) {
         this.error = err.data?.message || 'خطا در ایجاد حساب کاربری'
@@ -48,11 +48,11 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false
       }
     },
-    
+
     async login(credentials: { mobile: string; password: string }) {
       this.loading = true
       this.error = null
-      
+
       try {
         const config = useRuntimeConfig()
         const response = await $fetch<{ user: User; access_token: string }>('/auth/login', {
@@ -60,15 +60,14 @@ export const useAuthStore = defineStore('auth', {
           method: 'POST',
           body: credentials,
         })
-        
+
         this.user = response.user
         this.token = response.access_token
-        
-        // Store token in localStorage for persistence
+
         if (import.meta.client) {
           localStorage.setItem('auth_token', response.access_token)
         }
-        
+
         return response
       } catch (err: any) {
         this.error = err.data?.message || 'خطا در ورود به حساب'
@@ -77,7 +76,7 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false
       }
     },
-    
+
     async logout() {
       if (this.token) {
         try {
@@ -93,18 +92,18 @@ export const useAuthStore = defineStore('auth', {
           // Ignore logout errors
         }
       }
-      
+
       this.user = null
       this.token = null
-      
+
       if (import.meta.client) {
         localStorage.removeItem('auth_token')
       }
     },
-    
+
     async fetchUser() {
       if (!this.token) return null
-      
+
       try {
         const config = useRuntimeConfig()
         const response = await $fetch<User>('/auth/user', {
@@ -113,7 +112,7 @@ export const useAuthStore = defineStore('auth', {
             Authorization: `Bearer ${this.token}`,
           },
         })
-        
+
         this.user = response
         return response
       } catch {
@@ -121,7 +120,7 @@ export const useAuthStore = defineStore('auth', {
         return null
       }
     },
-    
+
     initAuth() {
       if (import.meta.client) {
         const token = localStorage.getItem('auth_token')

@@ -1443,3 +1443,91 @@ Tasks:
 - Changed/changed_to/changed_from
 - Safe JSON path access
 - Workflow validation en
+
+
+
+--------------------------------------------------------16 nov 2026-------
+# مأموریت
+ادامهٔ توسعهٔ MarketFlow (Laravel 13 + Nuxt 3). هدف محصول: کاربر لینک محصول را از
+ترب یا دیوار می‌دهد؛ سیستم قیمت/موجودی را رصد می‌کند، هشدار می‌دهد، و در نهایت
+«ثبت خرید» را انجام می‌دهد — بدون پرداخت خودکار.
+
+# قبل از هر کاری
+1. TODO.md را بخوان. قانون پروژه: هر تسک قبل از شروع باید در TODO.md باشد، بعد به
+   IN_PROGRESS و بعد به COMPLETED منتقل شود. هیچ کاری خارج از TODO.md نکن.
+2. یک AGENTS.md در روت بساز و همین قواعد + دستورات تست/لینت را داخلش ثبت کن.
+3. وضعیت را خودت تأیید کن: `cd backend && php artisan test`. عدد واقعی تست‌های
+   پاس‌شده را گزارش کن؛ به عدد داخل BDD_SCENARIOS.md اعتماد نکن.
+4. هیچ کامیت بزرگ نکن. هر فاز = یک برنچ + یک PR کوچک. آخر هر فاز توقف کن و گزارش بده.
+
+# فاز ۰ — تثبیت (blocker ها؛ بدون این‌ها بقیه معنا ندارد)
+هر مورد را تأیید و رفع کن و برایش تست بنویس:
+
+1. `App\Services\NotificationService::send()` یک instance method با امضای
+   (string $userId, string $recipient, string $message, ?string $template) است،
+   اما در `WorkflowDispatcher::triggerAlert()` و `WorkflowAction::triggerNotification()`
+   به‌صورت static و با ۲ آرگومان صدا زده می‌شود. → constructor injection، نه
+   `new WorkflowDispatcher()` داخل `CheckWatchJob`.
+2. `WorkflowDispatcher` کلاس `App\Services\NotificationChannels\ChannelRegistry` را
+   import می‌کند ولی کلاس در `App\Services\ChannelRegistry` است. یکی‌شان کن.
+3. `MonitorDispatchDue` ستون `next_check_at` را می‌نویسد که در migration جدول watches
+   وجود ندارد. → migration جدید + ایندکس روی (is_active, is_tracked, next_check_at).
+4. `.gitignore` فقط `.mim*` است. `.env`, `vendor/`, `node_modules/`, `.nuxt/`,
+   `storage/*.log` را اضافه کن. اگر قبلاً کامیت شده‌اند با `git rm -r --cached`
+   از ایندکس خارج کن (تاریخچه را بازنویسی نکن).
+5. `mimocodes` یک symlink کامیت‌شده به `/home/hamid/mimocodes` است و
+   `backend/debug_test.php` مسیر مطلق `/var/www/html/vendor/autoload.php` دارد.
+   هر دو را حذف کن. `prompt0.txt` هم مربوط به یک پروژهٔ ERP بی‌ربط است؛ حذف.
+6. `Makefile` به `phpstan` و `npm run lint/format` اشاره می‌کند که وجود ندارند.
+   یا larastan را نصب و config بده، یا آن خطوط را حذف کن؛ اسکریپت‌های فرانت را بساز.
+7. `frontend/src/pages/watches.vue` وجود ندارد ولی در نویگیشن `index.vue` لینک شده.
+   `frontend/stores/auth.ts` و `frontend/src/stores/auth.ts` تکراری‌اند؛ یکی را حذف کن.
+8. LICENSE (MIT) + README روت با معماری، نحوهٔ اجرا و وضعیت واقعی قابلیت‌ها اضافه کن.
+
+# فاز ۱ — لایهٔ Provider (ترب + دیوار)
+وضعیت فعلی: `WorkflowDispatcher` یک آرایهٔ hardcode شده دارد، `WatchController::store`
+مستقیم `new TorobProcessor()` می‌سازد و URL غیرترب را رد می‌کند.
+
+- `MarketplaceProvider` را یک contract تمیز کن و در `AppServiceProvider` بایند/تگ کن.
+- `ProviderRegistry` واقعی بساز که از جدول `provider_registry` بخواند (migration دارد،
+  کد ندارد).
+- `TorobProcessor` را درست کن: slug را از URL نگه دار، endpoint واقعی را استفاده کن،
+  و اگر scraping می‌کنی HTML را با `Accept: text/html` بگیر و selectorها را در config
+  بگذار نه در کد.
+- `DivarProcessor` بساز که `divar.ir/v/<slug>/<token>` را پشتیبانی کند. فیلدهای
+  نرمال‌شده: title, price, city, category, seller, posted_at, url, images.
+  دیوار API عمومی ندارد؛ اگر از HTML می‌خوانی rate limit و robots را رعایت کن و
+  همه‌چیز را قابل تنظیم و قابل خاموش‌کردن بگذار.
+- `WatchController::store` از registry استفاده کند، نه از یک provider مشخص.
+- تست: `supports()` برای هر دو، پارس URL، و normalize با fixture های ذخیره‌شده در
+  `tests/Fixtures/`. هیچ تستی نباید به اینترنت واقعی وابسته باشد (Http::fake).
+
+# فاز ۲ — دامنهٔ «ثبت خرید»
+الان هیچ مدلی برای سفارش/خرید وجود ندارد. به‌صورت ماژول مستقل اضافه کن:
+- مدل‌ها: `PurchaseIntent` (کاربر + محصول + قیمت هدف + فروشنده + وضعیت)،
+  `PurchaseOrder`، `PurchaseItem`.
+- وضعیت‌ها: draft → awaiting_approval → approved → placed → failed/cancelled.
+- قاعدهٔ سخت: هیچ تراکنش مالی و هیچ پرداختی خودکار انجام نمی‌شود. عامل حداکثر تا
+  `awaiting_approval` می‌رود و کاربر باید صریحاً تأیید کند.
+- endpoint ها: CRUD روی purchase-intents + `POST /purchase-orders/{id}/approve`.
+- audit log برای هر تغییر وضعیت (چه کسی، چه زمانی، چه داده‌ای).
+- تست feature برای کل چرخهٔ وضعیت، از جمله اینکه approve بدون کاربر مجاز خطا بدهد.
+
+# فاز ۳ — لایهٔ اجرای کار روی سایت (بعد از تأیید من شروع کن)
+هدف: «در هر سایتی که بخواهم کاری که می‌گویم انجام بده».
+- یک interface به نام `SiteAction` با `supports(url)`, `plan(context)`, `execute(plan)`.
+- اجرا با Playwright (Node sidecar) — نه curl برای فرم‌های JS-دار.
+- هر اکشن قبل از اجرا یک «طرح» برگرداند که کاربر ببیند و تأیید کند (human-in-the-loop).
+- کپچا، ورود با OTP و تأیید پرداخت = توقف و ارجاع به کاربر. هیچ دور زدنی نکن.
+- شروع با یک اکشن واقعی: «افزودن محصول به سبد ترب» به‌صورت dry-run.
+
+# قواعد کلی
+- DDD/SOLID را حفظ کن ولی over-engineering نکن. هر abstraction باید حداقل دو
+  مصرف‌کننده داشته باشد.
+- هر تغییر = کد + تست. تست بدون assertion یا تستی که فقط mock را چک می‌کند قبول نیست.
+- آخر هر فاز: `php artisan test`، `pint`، و گزارش فایل‌های تغییر‌یافته + محدودیت‌های
+  شناخته‌شده.
+- اگر به تصمیم محصولی رسیدی که مطمئن نیستی، بپرس؛ حدس نزن و کد نزن.
+- هیچ‌وقت در تست‌ها به سایت‌های واقعی درخواست نزن.
+`
+

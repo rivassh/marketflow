@@ -5,6 +5,7 @@ namespace App\Modules\Shared\ValueObjects;
 class Price
 {
     private int $amount;
+
     private string $currency;
 
     public function __construct(int $amount, string $currency = 'IRR')
@@ -12,11 +13,11 @@ class Price
         if ($amount < 0) {
             throw new \InvalidArgumentException('Price amount cannot be negative');
         }
-        
-        if (!in_array(strtoupper($currency), ['IRR', 'USD', 'EUR'], true)) {
+
+        if (! in_array(strtoupper($currency), ['IRR', 'USD', 'EUR'], true)) {
             throw new \InvalidArgumentException('Unsupported currency');
         }
-        
+
         $this->amount = $amount;
         $this->currency = strtoupper($currency);
     }
@@ -48,7 +49,7 @@ class Price
 
     public function format(string $locale = 'fa_IR'): string
     {
-        return number_format($this->getMajorUnits(), 0, '.', ',') . ' ' . $this->currency;
+        return number_format($this->getMajorUnits(), 0, '.', ',').' '.$this->currency;
     }
 
     public function add(Price $other): self
@@ -56,6 +57,7 @@ class Price
         if ($this->currency !== $other->currency) {
             throw new \InvalidArgumentException('Cannot add prices with different currencies');
         }
+
         return new self($this->amount + $other->amount, $this->currency);
     }
 
@@ -64,6 +66,7 @@ class Price
         if ($this->currency !== $other->currency) {
             throw new \InvalidArgumentException('Cannot subtract prices with different currencies');
         }
+
         return new self($this->amount - $other->amount, $this->currency);
     }
 
@@ -77,6 +80,7 @@ class Price
         if ($this->currency !== $other->currency) {
             throw new \InvalidArgumentException('Cannot compare prices with different currencies');
         }
+
         return $this->amount < $other->amount;
     }
 
@@ -85,12 +89,13 @@ class Price
         if ($this->currency !== $other->currency) {
             throw new \InvalidArgumentException('Cannot compare prices with different currencies');
         }
+
         return $this->amount > $other->amount;
     }
 
     public function isBetween(Price $min, Price $max): bool
     {
-        return !$this->isLessThan($min) && !$this->isGreaterThan($max);
+        return ! $this->isLessThan($min) && ! $this->isGreaterThan($max);
     }
 
     public function toArray(): array

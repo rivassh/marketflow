@@ -6,8 +6,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class AdminController extends Controller
@@ -38,7 +36,7 @@ class AdminController extends Controller
 
         return response()->json([
             'message' => 'Admin registered successfully',
-            'user' => $admin
+            'user' => $admin,
         ], 201);
     }
 
@@ -53,8 +51,8 @@ class AdminController extends Controller
         ]);
 
         $admin = User::where('mobile', $request->mobile)
-                     ->where('role', 'admin')
-                     ->first();
+            ->where('role', 'admin')
+            ->first();
 
         if (! $admin || ! Hash::check($request->password, $admin->password)) {
             throw ValidationException::withMessages([
@@ -67,7 +65,7 @@ class AdminController extends Controller
         return response()->json([
             'access_token' => $plainTextToken,
             'token_type' => 'Bearer',
-            'user' => $admin
+            'user' => $admin,
         ]);
     }
 
@@ -79,7 +77,7 @@ class AdminController extends Controller
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
-            'message' => 'Successfully logged out'
+            'message' => 'Successfully logged out',
         ]);
     }
 

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use Illuminate\Notifications\Notification as LaravelNotification;
-use Illuminate\Notifications\Messages\MailMessage;
 
 class NotificationMessage extends LaravelNotification
 {

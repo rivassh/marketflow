@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\Watch;
 use App\Models\Observation;
-use App\Workflow\WorkflowType;
+use App\Models\User;
+use App\Models\Watch;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class ObservationApiTest extends TestCase
 {
@@ -14,7 +14,7 @@ class ObservationApiTest extends TestCase
 
     public function test_user_can_list_observations_for_watch(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
         $watch = Watch::factory()->create(['user_id' => $user->id]);
 
         Observation::factory()->count(5)->create(['watch_id' => $watch->id]);
@@ -27,7 +27,7 @@ class ObservationApiTest extends TestCase
 
     public function test_observations_include_normalized_data(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
         $watch = Watch::factory()->create(['user_id' => $user->id]);
 
         Observation::factory()->create([
@@ -48,7 +48,7 @@ class ObservationApiTest extends TestCase
 
     public function test_observations_include_error_details_on_failure(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
         $watch = Watch::factory()->create(['user_id' => $user->id]);
 
         Observation::factory()->create([
@@ -67,8 +67,8 @@ class ObservationApiTest extends TestCase
 
     public function test_user_cannot_view_observations_for_other_users_watch(): void
     {
-        $user = \App\Models\User::factory()->create();
-        $otherUser = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
         $watch = Watch::factory()->create(['user_id' => $otherUser->id]);
 
         Observation::factory()->count(3)->create(['watch_id' => $watch->id]);
@@ -80,7 +80,7 @@ class ObservationApiTest extends TestCase
 
     public function test_observations_are_ordered_by_most_recent_first(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
         $watch = Watch::factory()->create(['user_id' => $user->id]);
 
         $oldest = Observation::factory()->create([
@@ -107,7 +107,7 @@ class ObservationApiTest extends TestCase
 
     public function test_pagination_for_observations(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
         $watch = Watch::factory()->create(['user_id' => $user->id]);
 
         Observation::factory()->count(25)->create(['watch_id' => $watch->id]);

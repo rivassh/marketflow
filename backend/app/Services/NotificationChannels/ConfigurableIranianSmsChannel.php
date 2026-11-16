@@ -2,10 +2,14 @@
 
 namespace App\Services\NotificationChannels;
 
+use Illuminate\Support\Facades\Http;
+
 class ConfigurableIranianSmsChannel implements NotificationChannelInterface
 {
     protected string $apiUrl;
+
     protected string $apiKey;
+
     protected string $senderNumber;
 
     public function __construct()
@@ -17,12 +21,12 @@ class ConfigurableIranianSmsChannel implements NotificationChannelInterface
 
     public function send(string $recipient, string $message): DeliveryResult
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return DeliveryResult::failure('SMS provider not configured');
         }
 
         try {
-            $response = \Illuminate\Support\Facades\Http::timeout(10)
+            $response = Http::timeout(10)
                 ->post($this->apiUrl, [
                     'apikey' => $this->apiKey,
                     'to' => $recipient,
@@ -32,10 +36,11 @@ class ConfigurableIranianSmsChannel implements NotificationChannelInterface
 
             if ($response->successful()) {
                 $data = $response->json();
+
                 return DeliveryResult::success($data['messageId'] ?? null);
             }
 
-            return DeliveryResult::failure('SMS API error: ' . $response->status());
+            return DeliveryResult::failure('SMS API error: '.$response->status());
         } catch (\Exception $e) {
             return DeliveryResult::failure($e->getMessage());
         }
@@ -48,6 +53,6 @@ class ConfigurableIranianSmsChannel implements NotificationChannelInterface
 
     public function isConfigured(): bool
     {
-        return !empty($this->apiUrl) && !empty($this->apiKey);
+        return ! empty($this->apiUrl) && ! empty($this->apiKey);
     }
 }

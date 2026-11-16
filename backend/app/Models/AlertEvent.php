@@ -12,7 +12,6 @@ class AlertEvent extends Model
 
     protected $fillable = [
         'watch_id',
-        'workflow_id',
         'observation_id',
         'event_key',
         'state',
@@ -23,7 +22,6 @@ class AlertEvent extends Model
 
     protected $casts = [
         'watch_id' => 'integer',
-        'workflow_id' => 'integer',
         'observation_id' => 'integer',
         'event_key' => 'string',
         'state' => 'string',
@@ -35,11 +33,6 @@ class AlertEvent extends Model
     public function watch(): BelongsTo
     {
         return $this->belongsTo(Watch::class);
-    }
-
-    public function workflow(): BelongsTo
-    {
-        return $this->belongsTo(Watch::class, 'workflow_id');
     }
 
     public function observation(): BelongsTo
@@ -67,7 +60,7 @@ class AlertEvent extends Model
     public function transitionTo(string $newState): void
     {
         $validStates = self::states();
-        if (!in_array($newState, $validStates, true)) {
+        if (! in_array($newState, $validStates, true)) {
             throw new \InvalidArgumentException("Invalid state: {$newState}");
         }
 

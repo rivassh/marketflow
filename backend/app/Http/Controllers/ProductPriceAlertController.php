@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\ProductPriceAlert;
-use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -15,47 +14,47 @@ class ProductPriceAlertController extends Controller
     public function index(Request $request)
     {
         $query = ProductPriceAlert::with(['product']);
-        
+
         // Search functionality
         if ($request->filled('search')) {
             $search = $request->search;
             $query->whereHas('product', function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('provider', 'like', "%{$search}%");
+                    ->orWhere('provider', 'like', "%{$search}%");
             });
         }
-        
+
         // Filter by provider
         if ($request->filled('filter') && $request->filter === 'provider') {
             $query->whereHas('product', function ($q) use ($request) {
                 $q->where('provider', 'like', "%{$request->provider}%");
             });
         }
-        
+
         // Filter by availability
         if ($request->filled('filter') && $request->filter === 'availability') {
             $query->whereHas('product', function ($q) use ($request) {
                 $q->where('last_known_status', $request->availability);
             });
         }
-        
+
         // Filter by stock status
         if ($request->filled('filter') && $request->filter === 'stock_status') {
             $query->whereHas('product', function ($q) use ($request) {
                 $q->where('metadata->stock_status', $request->stock_status);
             });
         }
-        
+
         // Sort functionality
         if ($request->filled('sort')) {
             $sortColumn = $request->sort;
             $sortDirection = $request->direction ?? 'asc';
-            
+
             switch ($sortColumn) {
                 case 'product.title':
                     $query->join('products', 'product_price_alerts.product_id', '=', 'products.id')
-                          ->select('product_price_alerts.*')
-                          ->orderBy('products.title', $sortDirection);
+                        ->select('product_price_alerts.*')
+                        ->orderBy('products.title', $sortDirection);
                     break;
                 case 'min_price':
                     $query->orderBy('min_price', $sortDirection);
@@ -70,11 +69,11 @@ class ProductPriceAlertController extends Controller
         } else {
             $query->latest();
         }
-        
+
         // Pagination
         $perPage = $request->get('perPage', 10);
         $alerts = $query->paginate($perPage);
-        
+
         return response()->json([
             'data' => $alerts->items(),
             'meta' => [
@@ -82,7 +81,7 @@ class ProductPriceAlertController extends Controller
                 'last_page' => $alerts->lastPage(),
                 'per_page' => $alerts->perPage(),
                 'total' => $alerts->total(),
-            ]
+            ],
         ]);
     }
 
@@ -123,7 +122,7 @@ class ProductPriceAlertController extends Controller
 
         return response()->json([
             'message' => 'Price alert created successfully',
-            'alert' => $alert
+            'alert' => $alert,
         ], 201);
     }
 
@@ -133,9 +132,9 @@ class ProductPriceAlertController extends Controller
     public function show(Request $request)
     {
         $alert = ProductPriceAlert::with('product')->findOrFail($request->id);
-        
+
         return response()->json([
-            'alert' => $alert
+            'alert' => $alert,
         ], 200);
     }
 
@@ -145,7 +144,7 @@ class ProductPriceAlertController extends Controller
     public function update(Request $request)
     {
         $alert = ProductPriceAlert::findOrFail($request->id);
-        
+
         $validator = Validator::make($request->all(), [
             'product_id' => ['sometimes', 'exists:products,id'],
             'min_price' => ['nullable', 'integer', 'min:0'],
@@ -168,10 +167,10 @@ class ProductPriceAlertController extends Controller
         }
 
         $alert->update($validator->validated());
-        
+
         return response()->json([
             'message' => 'Price alert updated successfully',
-            'alert' => $alert
+            'alert' => $alert,
         ], 200);
     }
 
@@ -184,7 +183,7 @@ class ProductPriceAlertController extends Controller
         $alert->delete();
 
         return response()->json([
-            'message' => 'Price alert deleted successfully'
+            'message' => 'Price alert deleted successfully',
         ], 204);
     }
 }

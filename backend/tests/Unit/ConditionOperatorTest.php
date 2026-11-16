@@ -59,9 +59,9 @@ class ConditionOperatorTest extends TestCase
             'EQUALS', 'NOT_EQUALS', 'GREATER_THAN', 'GREATER_THAN_OR_EQUAL',
             'LESS_THAN', 'LESS_THAN_OR_EQUAL', 'BETWEEN', 'CONTAINS',
             'NOT_CONTAINS', 'STARTS_WITH', 'ENDS_WITH', 'EXISTS',
-            'NOT_EXISTS', 'CHANGED', 'CHANGED_TO', 'CHANGED_FROM', 'MATCHES_REGEX'
+            'NOT_EXISTS', 'CHANGED', 'CHANGED_TO', 'CHANGED_FROM', 'MATCHES_REGEX',
         ];
-        $actualOperators = array_map(fn($c) => $c->name, ConditionOperator::cases());
+        $actualOperators = array_map(fn ($c) => $c->name, ConditionOperator::cases());
         sort($expectedOperators);
         sort($actualOperators);
         $this->assertEquals($expectedOperators, $actualOperators);

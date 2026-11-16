@@ -7,8 +7,11 @@ use App\Modules\Shared\ValueObjects\Price;
 class PriceChanged implements DomainEvent
 {
     private Product $product;
+
     private Price $previousPrice;
+
     private Price $newPrice;
+
     private \DateTimeImmutable $occurredAt;
 
     public function __construct(Product $product, Price $previousPrice, Price $newPrice)
@@ -16,7 +19,7 @@ class PriceChanged implements DomainEvent
         $this->product = $product;
         $this->previousPrice = $previousPrice;
         $this->newPrice = $newPrice;
-        $this->occurredAt = new \DateTimeImmutable();
+        $this->occurredAt = new \DateTimeImmutable;
     }
 
     public function getProduct(): Product

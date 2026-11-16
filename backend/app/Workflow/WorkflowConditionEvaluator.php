@@ -10,7 +10,7 @@ class WorkflowConditionEvaluator
 
     public function __construct(?ConditionEvaluatorRegistry $registry = null)
     {
-        $this->registry = $registry ?? new ConditionEvaluatorRegistry();
+        $this->registry = $registry ?? new ConditionEvaluatorRegistry;
     }
 
     public function evaluate(NormalizedProductData $data, array $conditions): bool
@@ -19,7 +19,7 @@ class WorkflowConditionEvaluator
             return true;
         }
 
-        $parsedConditions = array_map(fn($c) => is_array($c) ? Condition::fromArray($c) : $c, $conditions);
+        $parsedConditions = array_map(fn ($c) => is_array($c) ? Condition::fromArray($c) : $c, $conditions);
 
         return $this->evaluateGroup($data, $parsedConditions, 'AND');
     }
@@ -31,12 +31,23 @@ class WorkflowConditionEvaluator
         }
 
         $results = [];
-        foreach ($conditions as $condition) {
+        $currentOperator = $groupOperator;
+        $i = 0;
+        $count = count($conditions);
+
+        while ($i < $count) {
+            $condition = $conditions[$i];
+
+            // Logical operator acts as a group separator
             if ($condition instanceof Condition && $this->isLogicalOperator($condition->operator)) {
+                $currentOperator = strtoupper($condition->operator);
+                $i++;
+
                 continue;
             }
 
             $results[] = $this->evaluateCondition($data, $condition);
+            $i++;
         }
 
         if (empty($results)) {
@@ -47,7 +58,7 @@ class WorkflowConditionEvaluator
             return reset($results);
         }
 
-        return $this->aggregateResults($results, $groupOperator);
+        return $this->aggregateResults($results, $currentOperator);
     }
 
     protected function evaluateCondition(NormalizedProductData $data, Condition|array $condition): bool
@@ -57,7 +68,7 @@ class WorkflowConditionEvaluator
         }
 
         $operator = ConditionOperator::tryFrom($condition->operator);
-        if (!$operator) {
+        if (! $operator) {
             return false;
         }
 
@@ -67,11 +78,11 @@ class WorkflowConditionEvaluator
     protected function aggregateResults(array $results, string $operator): bool
     {
         return match (strtoupper($operator)) {
-            'AND' => !in_array(false, $results, true),
+            'AND' => ! in_array(false, $results, true),
             'OR' => in_array(true, $results, true),
             'XOR' => count(array_keys($results, true)) % 2 !== 0,
-            'NOT' => count($results) === 1 ? !$results[0] : false,
-            default => !in_array(false, $results, true),
+            'NOT' => count($results) === 1 ? ! $results[0] : false,
+            default => ! in_array(false, $results, true),
         };
     }
 

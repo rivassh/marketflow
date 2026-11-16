@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
 
 class RedisPersistenceService
 {
@@ -15,15 +15,15 @@ class RedisPersistenceService
      */
     public function storePriceAlert(int $productId, array $alertData, int $ttl = 300): void
     {
-        $key = $this->prefix . "price_alert:{$productId}";
-        
+        $key = $this->prefix."price_alert:{$productId}";
+
         Redis::setex(
             $key,
             $ttl,
             json_encode($alertData, JSON_UNESCAPED_SLASHES)
         );
 
-        Log::info("Price alert stored in Redis", [
+        Log::info('Price alert stored in Redis', [
             'product_id' => $productId,
             'key' => $key,
             'ttl' => $ttl,
@@ -35,7 +35,7 @@ class RedisPersistenceService
      */
     public function getPriceAlert(int $productId): ?array
     {
-        $key = $this->prefix . "price_alert:{$productId}";
+        $key = $this->prefix."price_alert:{$productId}";
         $cached = Redis::get($key);
 
         if ($cached) {
@@ -50,8 +50,8 @@ class RedisPersistenceService
      */
     public function storeNormalizedProduct(int $productId, array $normalizedData, int $ttl = 600): void
     {
-        $key = $this->prefix . "product:{$productId}";
-        
+        $key = $this->prefix."product:{$productId}";
+
         Redis::setex(
             $key,
             $ttl,
@@ -64,7 +64,7 @@ class RedisPersistenceService
      */
     public function getNormalizedProduct(int $productId): ?array
     {
-        $key = $this->prefix . "product:{$productId}";
+        $key = $this->prefix."product:{$productId}";
         $cached = Redis::get($key);
 
         if ($cached) {
@@ -79,7 +79,7 @@ class RedisPersistenceService
      */
     public function appendPriceHistory(int $productId, int $price, ?int $timestamp = null): void
     {
-        $key = $this->prefix . "price_history:{$productId}";
+        $key = $this->prefix."price_history:{$productId}";
         $score = $timestamp ?? time();
 
         Redis::zadd($key, $score, json_encode([
@@ -96,7 +96,7 @@ class RedisPersistenceService
      */
     public function getPriceHistory(int $productId, int $limit = 100): array
     {
-        $key = $this->prefix . "price_history:{$productId}";
+        $key = $this->prefix."price_history:{$productId}";
         $entries = Redis::zrevrange($key, 0, $limit - 1, ['WITHSCORES' => true]);
 
         $history = [];
@@ -115,16 +115,16 @@ class RedisPersistenceService
     public function invalidateProductCache(int $productId): void
     {
         $keys = [
-            $this->prefix . "price_alert:{$productId}",
-            $this->prefix . "product:{$productId}",
-            $this->prefix . "price_history:{$productId}",
+            $this->prefix."price_alert:{$productId}",
+            $this->prefix."product:{$productId}",
+            $this->prefix."price_history:{$productId}",
         ];
 
         foreach ($keys as $key) {
             Redis::del($key);
         }
 
-        Log::info("Product cache invalidated", ['product_id' => $productId]);
+        Log::info('Product cache invalidated', ['product_id' => $productId]);
     }
 
     /**
@@ -132,9 +132,9 @@ class RedisPersistenceService
      */
     public function acquireProcessingLock(int $productId, int $ttl = 30): bool
     {
-        $key = $this->prefix . "processing:{$productId}";
+        $key = $this->prefix."processing:{$productId}";
         $result = Redis::set($key, '1', 'NX', 'EX', $ttl);
-        
+
         return $result !== null;
     }
 
@@ -143,7 +143,7 @@ class RedisPersistenceService
      */
     public function releaseProcessingLock(int $productId): void
     {
-        $key = $this->prefix . "processing:{$productId}";
+        $key = $this->prefix."processing:{$productId}";
         Redis::del($key);
     }
 
@@ -152,16 +152,17 @@ class RedisPersistenceService
      */
     public function isProcessing(int $productId): bool
     {
-        $key = $this->prefix . "processing:{$productId}";
+        $key = $this->prefix."processing:{$productId}";
+
         return (bool) Redis::exists($key);
     }
 
     /**
      * Store the last check timestamp for a watch
      */
-    public function updateWatchLastCheck(int $watchId, int $timestamp = null): void
+    public function updateWatchLastCheck(int $watchId, ?int $timestamp = null): void
     {
-        $key = $this->prefix . "watch:last_check:{$watchId}";
+        $key = $this->prefix."watch:last_check:{$watchId}";
         Redis::set($key, $timestamp ?? time());
     }
 
@@ -170,18 +171,18 @@ class RedisPersistenceService
      */
     public function getWatchLastCheck(int $watchId): ?int
     {
-        $key = $this->prefix . "watch:last_check:{$watchId}";
+        $key = $this->prefix."watch:last_check:{$watchId}";
         $value = Redis::get($key);
-        
+
         return $value ? (int) $value : null;
     }
 
     /**
      * Cache alert notification status
      */
-    public function markAlertNotified(int $alertId, int $timestamp = null): void
+    public function markAlertNotified(int $alertId, ?int $timestamp = null): void
     {
-        $key = $this->prefix . "alert:notified:{$alertId}";
+        $key = $this->prefix."alert:notified:{$alertId}";
         Redis::set($key, $timestamp ?? time());
     }
 
@@ -190,7 +191,8 @@ class RedisPersistenceService
      */
     public function wasAlertNotified(int $alertId): bool
     {
-        $key = $this->prefix . "alert:notified:{$alertId}";
+        $key = $this->prefix."alert:notified:{$alertId}";
+
         return (bool) Redis::exists($key);
     }
 }

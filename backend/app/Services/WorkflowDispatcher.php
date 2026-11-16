@@ -2,13 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\Observation;
+use App\Models\Watch;
 use App\Providers\Processors\TorobProcessor;
 use App\Workflow\WorkflowConditionEvaluator;
 use App\Workflow\WorkflowType;
-use App\Models\Watch;
-use App\Models\Observation;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Queue;
 
 class WorkflowDispatcher
 {
@@ -18,20 +17,26 @@ class WorkflowDispatcher
 
     protected WorkflowConditionEvaluator $evaluator;
 
-    public function __construct()
-    {
-        $this->evaluator = new WorkflowConditionEvaluator();
+    protected NotificationService $notificationService;
+
+    public function __construct(
+        ?NotificationService $notificationService = null,
+        ?WorkflowConditionEvaluator $evaluator = null
+    ) {
+        $this->notificationService = $notificationService ?? app(NotificationService::class);
+        $this->evaluator = $evaluator ?? new WorkflowConditionEvaluator;
     }
 
     public function dispatch(Watch $watch): void
     {
-        if (!$watch->shouldCheck()) {
+        if (! $watch->shouldCheck()) {
             return;
         }
 
         $processor = $this->resolveProcessor($watch->product_url);
-        if (!$processor) {
+        if (! $processor) {
             Log::warning('No processor for URL', ['url' => $watch->product_url]);
+
             return;
         }
 
@@ -47,7 +52,7 @@ class WorkflowDispatcher
         } catch (\Exception $e) {
             Log::error('Workflow dispatch failed', [
                 'watch_id' => $watch->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             $this->recordError($watch, $e);
         }
@@ -56,11 +61,12 @@ class WorkflowDispatcher
     protected function resolveProcessor(string $url): ?object
     {
         foreach ($this->processors as $class) {
-            $processor = new $class();
+            $processor = app($class);
             if ($processor->supports($url)) {
                 return $processor;
             }
         }
+
         return null;
     }
 
@@ -90,8 +96,12 @@ class WorkflowDispatcher
     protected function triggerAlert(Watch $watch, $normalized): void
     {
         $message = $this->buildAlertMessage($watch, $normalized);
-        
-        NotificationService::send($watch->user_id, $message);
+
+        $this->notificationService->send(
+            (string) $watch->user_id,
+            (string) $watch->user->mobile ?? '',
+            $message
+        );
 
         $watch->increment('alert_count');
     }
@@ -110,6 +120,7 @@ class WorkflowDispatcher
     {
         $watch->update([
             'last_checked_at' => now(),
+            'next_check_at' => now()->addMinutes($watch->frequency_minutes),
             'price_history' => array_merge(
                 $watch->price_history ?? [],
                 [[$normalized->price['amount'] ?? 0, now()->toIso8601String()]]
@@ -121,7 +132,7 @@ class WorkflowDispatcher
     {
         Observation::create([
             'watch_id' => $watch->id,
-            'provider' => $watch->product_ref->provider ?? 'unknown',
+            'provider' => $watch->product_ref['provider'] ?? 'unknown',
             'observed_at' => now(),
             'normalized_data' => [],
             'raw_data' => [],

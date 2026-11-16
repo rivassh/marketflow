@@ -2,21 +2,22 @@
 
 namespace Tests\Unit;
 
-use App\Workflow\Condition;
+use App\Providers\DTOs\NormalizedProductData;
+use App\Workflow\ConditionEvaluatorRegistry;
 use App\Workflow\ConditionOperator;
 use App\Workflow\WorkflowConditionEvaluator;
-use App\Providers\DTOs\NormalizedProductData;
 use PHPUnit\Framework\TestCase;
 
 class WorkflowConditionEvaluatorTest extends TestCase
 {
     protected WorkflowConditionEvaluator $evaluator;
+
     protected NormalizedProductData $data;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->evaluator = new WorkflowConditionEvaluator();
+        $this->evaluator = new WorkflowConditionEvaluator;
         $this->data = NormalizedProductData::create([
             'provider' => 'torob',
             'externalId' => '12345',
@@ -146,9 +147,7 @@ class WorkflowConditionEvaluatorTest extends TestCase
 
     public function test_get_value_returns_null_for_nonexistent_path(): void
     {
-        $reflection = new \ReflectionMethod($this->evaluator, 'resolveValue');
-        $reflection->setAccessible(true);
-        $registry = new \App\Workflow\ConditionEvaluatorRegistry();
+        $registry = new ConditionEvaluatorRegistry;
         $result = $registry->evaluate(ConditionOperator::EQUALS, $this->data, 'nonexistent.path', 'test');
         $this->assertFalse($result);
     }

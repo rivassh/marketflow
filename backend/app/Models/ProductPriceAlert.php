@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redis;
 
 class ProductPriceAlert extends Model
@@ -22,7 +21,7 @@ class ProductPriceAlert extends Model
         'is_active',
         'redis_ttl',
         'last_notified_at',
-        'alert_conditions'
+        'alert_conditions',
     ];
 
     protected $casts = [

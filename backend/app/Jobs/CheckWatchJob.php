@@ -9,16 +9,15 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Queue;
 
 class CheckWatchJob implements ShouldQueue
 {
     use InteractsWithQueue, Queueable, SerializesModels;
 
-    protected ?Watch $watch = null;
-
-    public function __construct(protected readonly int $watchId)
-    {
+    public function __construct(
+        public readonly int $watchId,
+        public readonly ?WorkflowDispatcher $dispatcher = null
+    ) {
         //
     }
 
@@ -26,23 +25,24 @@ class CheckWatchJob implements ShouldQueue
     {
         $watch = Watch::find($this->watchId);
 
-        if (!$watch) {
+        if (! $watch) {
             Log::error("Watch not found: {$this->watchId}");
+
             return;
         }
 
-        if (!$watch->shouldCheck()) {
+        if (! $watch->shouldCheck()) {
             return;
         }
 
-        $dispatcher = new WorkflowDispatcher();
+        $dispatcher = $this->dispatcher ?? app(WorkflowDispatcher::class);
         $dispatcher->dispatch($watch);
     }
 
     public function failed(\Exception $exception): void
     {
         Log::error("CheckWatchJob failed for watch {$this->watchId}", [
-            'error' => $exception->getMessage()
+            'error' => $exception->getMessage(),
         ]);
     }
 }

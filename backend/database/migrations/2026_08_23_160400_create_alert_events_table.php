@@ -11,7 +11,6 @@ class CreateAlertEventsTable extends Migration
         Schema::create('alert_events', function (Blueprint $table) {
             $table->id();
             $table->foreignId('watch_id')->constrained()->onDelete('cascade');
-            $table->foreignId('workflow_id')->nullable()->constrained()->onDelete('cascade');
             $table->foreignId('observation_id')->nullable()->constrained()->onDelete('cascade');
             $table->string('event_key')->nullable();
             $table->string('state')->default('condition_not_met');

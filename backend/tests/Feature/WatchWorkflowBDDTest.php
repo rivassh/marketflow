@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use App\Models\Watch;
-use App\Services\WorkflowDispatcher;
+use App\Providers\DTOs\ProductReference;
 use App\Providers\Processors\TorobProcessor;
-use App\Providers\DTOs\{ProductReference};
+use App\Services\WorkflowDispatcher;
 use App\Workflow\WorkflowConditionEvaluator;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Tests\TestCase;
 
 /**
  * BDD Feature Tests for Watch Workflow
@@ -26,7 +26,7 @@ class WatchWorkflowBDDTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->dispatcher = new WorkflowDispatcher();
+        $this->dispatcher = new WorkflowDispatcher;
     }
 
     /**
@@ -45,7 +45,7 @@ class WatchWorkflowBDDTest extends TestCase
                     'operator' => 'less_than',
                     'value' => 'price.amount',
                     'expected_value' => 10000000,
-                ]
+                ],
             ],
             'frequency_minutes' => 15,
             'is_active' => true,
@@ -79,7 +79,7 @@ class WatchWorkflowBDDTest extends TestCase
             ], 200),
         ]);
 
-        $processor = new TorobProcessor();
+        $processor = new TorobProcessor;
         $reference = ProductReference::create('torob', '12345', 'iphone-14-pro');
         $snapshot = $processor->fetchProduct($reference);
         $normalized = $processor->normalizeSnapshot($snapshot);
@@ -92,7 +92,7 @@ class WatchWorkflowBDDTest extends TestCase
             'expected_value' => 10000000,
         ]];
 
-        $evaluator = new WorkflowConditionEvaluator();
+        $evaluator = new WorkflowConditionEvaluator;
         $result = $evaluator->evaluate($normalized, $conditions);
 
         $this->assertTrue($result, 'Price below threshold should trigger alert');
@@ -113,7 +113,7 @@ class WatchWorkflowBDDTest extends TestCase
             ], 200),
         ]);
 
-        $processor = new TorobProcessor();
+        $processor = new TorobProcessor;
         $reference = ProductReference::create('torob', '12345', 'iphone-14-pro');
         $snapshot = $processor->fetchProduct($reference);
         $normalized = $processor->normalizeSnapshot($snapshot);
@@ -124,7 +124,7 @@ class WatchWorkflowBDDTest extends TestCase
             'expected_value' => 10000000,
         ]];
 
-        $evaluator = new WorkflowConditionEvaluator();
+        $evaluator = new WorkflowConditionEvaluator;
         $result = $evaluator->evaluate($normalized, $conditions);
 
         $this->assertFalse($result, 'Price above threshold should NOT trigger alert');
@@ -145,7 +145,7 @@ class WatchWorkflowBDDTest extends TestCase
             ], 200),
         ]);
 
-        $processor = new TorobProcessor();
+        $processor = new TorobProcessor;
         $reference = ProductReference::create('torob', '12345', 'iphone-14-pro');
         $snapshot = $processor->fetchProduct($reference);
         $normalized = $processor->normalizeSnapshot($snapshot);
@@ -163,7 +163,7 @@ class WatchWorkflowBDDTest extends TestCase
             ],
         ];
 
-        $evaluator = new WorkflowConditionEvaluator();
+        $evaluator = new WorkflowConditionEvaluator;
         $result = $evaluator->evaluate($normalized, $conditions);
 
         $this->assertTrue($result, 'All conditions met should trigger alert');
@@ -184,7 +184,7 @@ class WatchWorkflowBDDTest extends TestCase
             ], 200),
         ]);
 
-        $processor = new TorobProcessor();
+        $processor = new TorobProcessor;
         $reference = ProductReference::create('torob', '12345', 'iphone-14-pro');
         $snapshot = $processor->fetchProduct($reference);
         $normalized = $processor->normalizeSnapshot($snapshot);
@@ -195,7 +195,7 @@ class WatchWorkflowBDDTest extends TestCase
             'expected_value' => 'unavailable',
         ]];
 
-        $evaluator = new WorkflowConditionEvaluator();
+        $evaluator = new WorkflowConditionEvaluator;
         $result = $evaluator->evaluate($normalized, $conditions);
 
         $this->assertTrue($result, 'Unavailable product should trigger notification');
@@ -212,7 +212,7 @@ class WatchWorkflowBDDTest extends TestCase
             'torob.com/*' => Http::response(['error' => 'Not found'], 404),
         ]);
 
-        $processor = new TorobProcessor();
+        $processor = new TorobProcessor;
         $reference = ProductReference::create('torob', '99999', 'missing-item');
 
         $threwException = false;
@@ -240,7 +240,7 @@ class WatchWorkflowBDDTest extends TestCase
             ], 200),
         ]);
 
-        $processor = new TorobProcessor();
+        $processor = new TorobProcessor;
         $reference = ProductReference::create('torob', '12345', 'iphone-14-pro');
         $snapshot = $processor->fetchProduct($reference);
         $normalized = $processor->normalizeSnapshot($snapshot);
@@ -251,7 +251,7 @@ class WatchWorkflowBDDTest extends TestCase
             'expected_value' => [9000000, 10000000],
         ]];
 
-        $evaluator = new WorkflowConditionEvaluator();
+        $evaluator = new WorkflowConditionEvaluator;
         $result = $evaluator->evaluate($normalized, $conditions);
 
         $this->assertTrue($result, 'Price within range should trigger alert');
@@ -272,7 +272,7 @@ class WatchWorkflowBDDTest extends TestCase
             ], 200),
         ]);
 
-        $processor = new TorobProcessor();
+        $processor = new TorobProcessor;
         $reference = ProductReference::create('torob', '12345', 'iphone-14-pro');
         $snapshot = $processor->fetchProduct($reference);
         $normalized = $processor->normalizeSnapshot($snapshot);
@@ -283,7 +283,7 @@ class WatchWorkflowBDDTest extends TestCase
             'expected_value' => '/iPhone.*Pro/i',
         ]];
 
-        $evaluator = new WorkflowConditionEvaluator();
+        $evaluator = new WorkflowConditionEvaluator;
         $result = $evaluator->evaluate($normalized, $conditions);
 
         $this->assertTrue($result, 'Title matching regex should trigger alert');

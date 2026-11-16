@@ -7,7 +7,7 @@ use App\Models\Watch;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\AlertEvent>
+ * @extends Factory<AlertEvent>
  */
 class AlertEventFactory extends Factory
 {
@@ -17,9 +17,7 @@ class AlertEventFactory extends Factory
     {
         return [
             'watch_id' => Watch::factory()->create()->id,
-            'workflow_id' => null,
-            'observation_id' => null,
-            'event_key' => sha256(uniqid()),
+            'event_key' => hash('sha256', uniqid()),
             'state' => 'condition_met',
             'triggered_at' => now(),
             'resolved_at' => null,

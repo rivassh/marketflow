@@ -2,9 +2,9 @@
 
 namespace Tests\Unit;
 
-use App\Services\DeduplicationService;
-use App\Models\Watch;
 use App\Models\AlertEvent;
+use App\Models\Watch;
+use App\Services\DeduplicationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,7 +17,7 @@ class DeduplicationServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new DeduplicationService();
+        $this->service = new DeduplicationService;
     }
 
     public function test_create_alert_event_generates_event_key(): void

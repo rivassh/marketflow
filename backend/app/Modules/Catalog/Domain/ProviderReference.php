@@ -5,7 +5,9 @@ namespace App\Modules\Catalog\Domain;
 class ProviderReference
 {
     private string $provider;
+
     private string $externalId;
+
     private string $canonicalUrl;
 
     public function __construct(string $provider, string $externalId, string $canonicalUrl)
@@ -16,10 +18,10 @@ class ProviderReference
         if (empty($externalId)) {
             throw new \InvalidArgumentException('External ID cannot be empty');
         }
-        if (!filter_var($canonicalUrl, FILTER_VALIDATE_URL)) {
+        if (! filter_var($canonicalUrl, FILTER_VALIDATE_URL)) {
             throw new \InvalidArgumentException('Invalid canonical URL');
         }
-        
+
         $this->provider = $provider;
         $this->externalId = $externalId;
         $this->canonicalUrl = $canonicalUrl;

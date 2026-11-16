@@ -24,10 +24,10 @@ class MonitorDispatchDue extends Command
         $query = Watch::where('is_active', true)
             ->where('is_tracked', true);
 
-        if (!$force) {
+        if (! $force) {
             $query->where(function ($q) {
-                $q->whereNull('last_checked_at')
-                  ->orWhere('last_checked_at', '<', now()->subMinutes(1));
+                $q->whereNull('next_check_at')
+                    ->orWhere('next_check_at', '<', now());
             });
         }
 
@@ -35,6 +35,7 @@ class MonitorDispatchDue extends Command
 
         if ($watches->isEmpty()) {
             $this->info('No due watches to dispatch');
+
             return Command::SUCCESS;
         }
 
@@ -50,12 +51,13 @@ class MonitorDispatchDue extends Command
                 $watch->update(['next_check_at' => now()->addMinutes($watch->frequency_minutes)]);
             } catch (\Exception $e) {
                 Log::error("Failed to dispatch watch {$watch->id}", [
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
 
-        $this->info("Successfully dispatched " . count($jobIds) . " watches");
+        $this->info('Successfully dispatched '.count($jobIds).' watches');
+
         return Command::SUCCESS;
     }
 }

@@ -2,30 +2,33 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\Watch;
 use App\Services\WorkflowDispatcher;
+use Illuminate\Console\Command;
 
 class RunProductWatchers extends Command
 {
     protected $signature = 'workflow:process
                             {--watch-id= : Specific watch ID to check}
                             {--batch= : Number of watches to process}';
+
     protected $description = 'Process product watchers for price alerts';
 
     public function handle(): int
     {
-        $dispatcher = new WorkflowDispatcher();
+        $dispatcher = new WorkflowDispatcher;
         $watchId = $this->option('watch-id');
 
         if ($watchId) {
             $watch = Watch::find($watchId);
-            if (!$watch) {
+            if (! $watch) {
                 $this->error("Watch not found: {$watchId}");
+
                 return Command::FAILURE;
             }
             $dispatcher->dispatch($watch);
             $this->info("Processed watch #{$watch->id}");
+
             return Command::SUCCESS;
         }
 
@@ -37,6 +40,7 @@ class RunProductWatchers extends Command
 
         if ($watches->isEmpty()) {
             $this->info('No active watches to process');
+
             return Command::SUCCESS;
         }
 
@@ -47,6 +51,7 @@ class RunProductWatchers extends Command
         }
 
         $this->info('All watches processed');
+
         return Command::SUCCESS;
     }
 

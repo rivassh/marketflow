@@ -2,12 +2,10 @@
 
 namespace App\Providers\Processors;
 
+use App\Providers\DTOs\NormalizedProductData;
+use App\Providers\DTOs\ProductReference;
+use App\Providers\DTOs\ProviderProductSnapshot;
 use App\Providers\Interfaces\MarketplaceProvider;
-use App\Providers\DTOs\{
-    ProductReference,
-    ProviderProductSnapshot,
-    NormalizedProductData
-};
 use Illuminate\Support\Facades\Http;
 
 class TorobProcessor implements MarketplaceProvider
@@ -66,10 +64,10 @@ class TorobProcessor implements MarketplaceProvider
                 'User-Agent' => $this->config['user_agent'],
                 'Accept' => 'application/json',
             ])->timeout($this->config['api_timeout'])
-              ->get($url);
+                ->get($url);
 
             if ($response->failed()) {
-                throw new \Exception('Provider request failed: ' . $response->status());
+                throw new \Exception('Provider request failed: '.$response->status());
             }
 
             $rawData = $response->json();
@@ -115,7 +113,7 @@ class TorobProcessor implements MarketplaceProvider
             'imageUrl' => $imageUrl,
             'productUrl' => $productUrl,
             'observedAt' => $observedAt,
-            'raw' => $rawData
+            'raw' => $rawData,
         ]);
     }
 
@@ -133,8 +131,8 @@ class TorobProcessor implements MarketplaceProvider
     protected function buildUrl(ProductReference $reference): string
     {
         $base = $this->config['base_url'];
-        
-        return $base . '/p/' . $reference->externalId . '/' . str_replace(' ', '-', strtolower($reference->externalId)) . '/';
+
+        return $base.'/p/'.$reference->externalId.'/'.str_replace(' ', '-', strtolower($reference->externalId)).'/';
     }
 
     /**
@@ -155,7 +153,7 @@ class TorobProcessor implements MarketplaceProvider
         return [
             'amount' => $priceData['amount'] ?? 0,
             'currency' => $priceData['currency'] ?? 'IRR',
-            'display' => $priceData['display'] ?? null
+            'display' => $priceData['display'] ?? null,
         ];
     }
 

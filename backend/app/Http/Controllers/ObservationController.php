@@ -25,7 +25,7 @@ class ObservationController extends Controller
                 'last_page' => $observations->lastPage(),
                 'per_page' => $observations->perPage(),
                 'total' => $observations->total(),
-            ]
+            ],
         ]);
     }
 }

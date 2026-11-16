@@ -3,7 +3,6 @@
 namespace Tests\Unit;
 
 use App\Services\NotificationMessage;
-use Illuminate\Notifications\Messages\MailMessage;
 use PHPUnit\Framework\TestCase;
 
 class NotificationMessageTest extends TestCase
@@ -18,13 +17,13 @@ class NotificationMessageTest extends TestCase
 
     public function test_via_returns_database_channel(): void
     {
-        $channels = $this->notification->via(new \stdClass());
+        $channels = $this->notification->via(new \stdClass);
         $this->assertEquals(['database'], $channels);
     }
 
     public function test_to_database_returns_message_and_timestamp(): void
     {
-        $data = $this->notification->toDatabase(new \stdClass());
+        $data = $this->notification->toDatabase(new \stdClass);
 
         $this->assertArrayHasKey('message', $data);
         $this->assertArrayHasKey('timestamp', $data);
@@ -33,7 +32,7 @@ class NotificationMessageTest extends TestCase
 
     public function test_to_array_returns_message_and_timestamp(): void
     {
-        $data = $this->notification->toArray(new \stdClass());
+        $data = $this->notification->toArray(new \stdClass);
 
         $this->assertArrayHasKey('message', $data);
         $this->assertArrayHasKey('timestamp', $data);

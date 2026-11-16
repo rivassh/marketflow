@@ -2,19 +2,15 @@
 
 namespace Tests\Unit;
 
-use App\Services\WorkflowDispatcher;
 use App\Models\Watch;
-use App\Workflow\WorkflowType;
+use App\Providers\DTOs\NormalizedProductData;
+use App\Providers\DTOs\ProviderProductSnapshot;
 use App\Providers\Processors\TorobProcessor;
-use App\Providers\DTOs\{
-    ProductReference,
-    ProviderProductSnapshot,
-    NormalizedProductData
-};
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Facades\Log;
+use App\Services\WorkflowDispatcher;
+use App\Workflow\WorkflowType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class WorkflowDispatcherTest extends TestCase
@@ -26,7 +22,7 @@ class WorkflowDispatcherTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->dispatcher = new WorkflowDispatcher();
+        $this->dispatcher = new WorkflowDispatcher;
         Queue::fake();
     }
 
