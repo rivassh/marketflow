@@ -3,13 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\Watch;
-use App\Providers\Processors\TorobProcessor;
+use App\Providers\ProviderRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class WatchController extends Controller
 {
+    public function __construct(
+        protected ProviderRegistry $registry
+    ) {}
+
     public function index(Request $request)
     {
         $watches = Watch::where('user_id', $request->user()->id)
@@ -41,16 +45,23 @@ class WatchController extends Controller
             throw ValidationException::withMessages($validator->errors()->toArray());
         }
 
-        $processor = new TorobProcessor;
-        if (! $processor->supports($request->product_url)) {
+        $processor = $this->registry->resolve($request->product_url);
+        if (! $processor) {
             throw ValidationException::withMessages([
-                'product_url' => ['The product URL is not supported. Please provide a valid torob.com URL.'],
+                'product_url' => ['The product URL is not supported. Please provide a valid torob.com or divar.ir URL.'],
             ]);
         }
+
+        $reference = $processor->parseProductReference($request->product_url);
 
         $watch = Watch::create([
             'user_id' => $request->user()->id,
             'product_url' => $request->product_url,
+            'product_ref' => [
+                'provider' => $reference->provider,
+                'externalId' => $reference->externalId,
+                'canonicalUrl' => $reference->canonicalUrl,
+            ],
             'workflow_type' => $request->workflow_type,
             'conditions' => $request->conditions,
             'frequency_minutes' => $request->frequency_minutes,
@@ -92,7 +103,24 @@ class WatchController extends Controller
             throw ValidationException::withMessages($validator->errors()->toArray());
         }
 
-        $watch->update($validator->validated());
+        $validated = $validator->validated();
+
+        if (isset($validated['product_url'])) {
+            $processor = $this->registry->resolve($validated['product_url']);
+            if (! $processor) {
+                throw ValidationException::withMessages([
+                    'product_url' => ['The product URL is not supported.'],
+                ]);
+            }
+            $reference = $processor->parseProductReference($validated['product_url']);
+            $validated['product_ref'] = [
+                'provider' => $reference->provider,
+                'externalId' => $reference->externalId,
+                'canonicalUrl' => $reference->canonicalUrl,
+            ];
+        }
+
+        $watch->update($validated);
 
         return response()->json([
             'message' => 'Watch updated successfully',

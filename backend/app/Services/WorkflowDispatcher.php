@@ -4,26 +4,20 @@ namespace App\Services;
 
 use App\Models\Observation;
 use App\Models\Watch;
-use App\Providers\Processors\TorobProcessor;
+use App\Providers\ProviderRegistry;
 use App\Workflow\WorkflowConditionEvaluator;
 use App\Workflow\WorkflowType;
 use Illuminate\Support\Facades\Log;
 
 class WorkflowDispatcher
 {
-    protected array $processors = [
-        'torob' => TorobProcessor::class,
-    ];
-
     protected WorkflowConditionEvaluator $evaluator;
 
-    protected NotificationService $notificationService;
-
     public function __construct(
-        ?NotificationService $notificationService = null,
+        protected NotificationService $notificationService,
+        protected ProviderRegistry $registry,
         ?WorkflowConditionEvaluator $evaluator = null
     ) {
-        $this->notificationService = $notificationService ?? app(NotificationService::class);
         $this->evaluator = $evaluator ?? new WorkflowConditionEvaluator;
     }
 
@@ -33,7 +27,7 @@ class WorkflowDispatcher
             return;
         }
 
-        $processor = $this->resolveProcessor($watch->product_url);
+        $processor = $this->registry->resolve($watch->product_url);
         if (! $processor) {
             Log::warning('No processor for URL', ['url' => $watch->product_url]);
 
@@ -58,16 +52,14 @@ class WorkflowDispatcher
         }
     }
 
+    public function getRegistry(): ProviderRegistry
+    {
+        return $this->registry;
+    }
+
     protected function resolveProcessor(string $url): ?object
     {
-        foreach ($this->processors as $class) {
-            $processor = app($class);
-            if ($processor->supports($url)) {
-                return $processor;
-            }
-        }
-
-        return null;
+        return $this->registry->resolve($url);
     }
 
     protected function storeObservation(Watch $watch, $snapshot, $normalized): void

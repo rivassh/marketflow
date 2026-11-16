@@ -26,7 +26,7 @@ class WatchWorkflowBDDTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->dispatcher = new WorkflowDispatcher;
+        $this->dispatcher = app(WorkflowDispatcher::class);
     }
 
     /**
@@ -79,7 +79,7 @@ class WatchWorkflowBDDTest extends TestCase
             ], 200),
         ]);
 
-        $processor = new TorobProcessor;
+        $processor = app(TorobProcessor::class);
         $reference = ProductReference::create('torob', '12345', 'iphone-14-pro');
         $snapshot = $processor->fetchProduct($reference);
         $normalized = $processor->normalizeSnapshot($snapshot);
@@ -113,7 +113,7 @@ class WatchWorkflowBDDTest extends TestCase
             ], 200),
         ]);
 
-        $processor = new TorobProcessor;
+        $processor = app(TorobProcessor::class);
         $reference = ProductReference::create('torob', '12345', 'iphone-14-pro');
         $snapshot = $processor->fetchProduct($reference);
         $normalized = $processor->normalizeSnapshot($snapshot);
@@ -145,7 +145,7 @@ class WatchWorkflowBDDTest extends TestCase
             ], 200),
         ]);
 
-        $processor = new TorobProcessor;
+        $processor = app(TorobProcessor::class);
         $reference = ProductReference::create('torob', '12345', 'iphone-14-pro');
         $snapshot = $processor->fetchProduct($reference);
         $normalized = $processor->normalizeSnapshot($snapshot);
@@ -184,7 +184,7 @@ class WatchWorkflowBDDTest extends TestCase
             ], 200),
         ]);
 
-        $processor = new TorobProcessor;
+        $processor = app(TorobProcessor::class);
         $reference = ProductReference::create('torob', '12345', 'iphone-14-pro');
         $snapshot = $processor->fetchProduct($reference);
         $normalized = $processor->normalizeSnapshot($snapshot);
@@ -212,7 +212,7 @@ class WatchWorkflowBDDTest extends TestCase
             'torob.com/*' => Http::response(['error' => 'Not found'], 404),
         ]);
 
-        $processor = new TorobProcessor;
+        $processor = app(TorobProcessor::class);
         $reference = ProductReference::create('torob', '99999', 'missing-item');
 
         $threwException = false;
@@ -240,7 +240,7 @@ class WatchWorkflowBDDTest extends TestCase
             ], 200),
         ]);
 
-        $processor = new TorobProcessor;
+        $processor = app(TorobProcessor::class);
         $reference = ProductReference::create('torob', '12345', 'iphone-14-pro');
         $snapshot = $processor->fetchProduct($reference);
         $normalized = $processor->normalizeSnapshot($snapshot);
@@ -272,7 +272,7 @@ class WatchWorkflowBDDTest extends TestCase
             ], 200),
         ]);
 
-        $processor = new TorobProcessor;
+        $processor = app(TorobProcessor::class);
         $reference = ProductReference::create('torob', '12345', 'iphone-14-pro');
         $snapshot = $processor->fetchProduct($reference);
         $normalized = $processor->normalizeSnapshot($snapshot);

@@ -15,6 +15,7 @@ every time take a todo task mve it to in_progress part after done move to done p
 * Fixed production configuration in .env.example
 * Confirmed deployment at torob.adlr.ir is operational
 * Phase 0: Stabilization blockers — all 8 items complete
+* Phase 1: Provider Layer (Torob + Divar) — all items complete
 
 # PHASE 0 — Stabilization (blockers) — DONE
 - [x] 1. Fixed NotificationService::send() static/instance mismatch in WorkflowDispatcher and WorkflowAction
@@ -26,13 +27,13 @@ every time take a todo task mve it to in_progress part after done move to done p
 - [x] 7. Fixed frontend: removed duplicate stores/auth.ts (moved to stores/), created pages/watches.vue
 - [x] 8. Added LICENSE (MIT) + README.md with architecture, run instructions, feature status
 
-# PHASE 1 — Provider Layer (Torob + Divar)
-- [ ] MarketplaceProvider contract + binding in AppServiceProvider
-- [ ] Real ProviderRegistry reading from provider_registry table
-- [ ] TorobProcessor: keep slug, use real endpoint, HTML scraping with Accept: text/html, config selectors
-- [ ] DivarProcessor: support divar.ir/v/<slug>/<token>, normalized fields, rate limit/robots configurable
-- [ ] WatchController::store uses registry instead of hardcoded TorobProcessor
-- [ ] Tests: supports(), URL parsing, normalize with fixtures (Http::fake)
+# PHASE 1 — Provider Layer (Torob + Divar) — DONE
+- [x] MarketplaceProvider contract + binding in AppServiceProvider
+- [x] Real ProviderRegistry reading from provider_registry table
+- [x] TorobProcessor: keep slug, use real endpoint, HTML scraping with Accept: text/html, config selectors
+- [x] DivarProcessor: support divar.ir/v/<slug>/<token>, normalized fields, rate limit/robots configurable
+- [x] WatchController::store uses registry instead of hardcoded TorobProcessor
+- [x] Tests: supports(), URL parsing, normalize with fixtures (Http::fake)
 
 # PHASE 2 — Purchase Intent Domain
 - [ ] Models: PurchaseIntent, PurchaseOrder, PurchaseItem

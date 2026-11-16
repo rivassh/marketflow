@@ -16,7 +16,10 @@ class NormalizedProductData
         public readonly ?string $imageUrl = null,
         public readonly ?string $productUrl = null,
         public readonly ?string $observedAt = null,
-        public readonly ?array $raw = null
+        public readonly ?array $raw = null,
+        public readonly ?string $city = null,
+        public readonly ?string $category = null,
+        public readonly ?string $postedAt = null
     ) {}
 
     public static function create(array $data): self

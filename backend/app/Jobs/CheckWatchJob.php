@@ -16,7 +16,7 @@ class CheckWatchJob implements ShouldQueue
 
     public function __construct(
         public readonly int $watchId,
-        public readonly ?WorkflowDispatcher $dispatcher = null
+        protected ?WorkflowDispatcher $dispatcher = null
     ) {
         //
     }

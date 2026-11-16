@@ -6,76 +6,85 @@ use App\Providers\DTOs\NormalizedProductData;
 use App\Providers\DTOs\ProductReference;
 use App\Providers\DTOs\ProviderProductSnapshot;
 use App\Providers\Interfaces\MarketplaceProvider;
+use App\Providers\ScrapingHelper;
 use Illuminate\Support\Facades\Http;
 
 class TorobProcessor implements MarketplaceProvider
 {
-    /**
-     * Provider configuration
-     */
-    protected array $config = [
-        'base_url' => 'https://torob.com',
-        'api_timeout' => 10,
-        'retry_count' => 2,
-        'cache_ttl' => 300,
-        'user_agent' => 'MarketFlow/3.0',
-    ];
+    protected array $config;
 
-    /**
-     * Check if this provider supports the given product URL
-     */
-    public function supports($url): bool
-    {
-        // Match torob.com product URLs (requires slug after ID)
-        return preg_match(
-            '|^https?://torob\.com/p/\d+[a-z0-9-]+/|i',
-            $url
-        ) > 0;
+    public function __construct(
+        protected ?ScrapingHelper $scraper = null,
+        ?array $config = null
+    ) {
+        $this->config = $config ?? config('marketflow.torob', []);
     }
 
-    /**
-     * Parse product reference from torob URL
-     */
+    protected function scraper(): ScrapingHelper
+    {
+        return $this->scraper ?? app(ScrapingHelper::class);
+    }
+
+    public function supports($url): bool
+    {
+        return (bool) preg_match(
+            '|^https?://torob\.com/p/\d+[a-z0-9-]+/|i',
+            (string) $url
+        );
+    }
+
     public function parseProductReference($url): ProductReference
     {
-        // Match torob URL pattern: https://torob.com/p/12345/smartphone-x-review/
         preg_match(
-            '/^https?:\/\/torob\.com\/p\/(\\d+)\/([a-z0-9-]+)\/.*$/i',
-            $url,
+            '/^https?:\/\/torob\.com\/p\/(\d+)\/([a-z0-9-]+)\/.*$/i',
+            (string) $url,
             $matches
         );
 
+        $externalId = $matches[1] ?? '';
+        $slug = $matches[2] ?? '';
+
         return ProductReference::create(
             'torob',
-            $matches[1] ?? '',
-            $matches[2] ?? $url
+            $externalId,
+            $slug
         );
     }
 
-    /**
-     * Fetch product data from provider
-     */
     public function fetchProduct(ProductReference $reference): ProviderProductSnapshot
     {
         $url = $this->buildUrl($reference);
 
+        if ($this->config['scrape_html'] ?? true) {
+            $html = $this->scraper()->fetchHtml(
+                $url,
+                $this->config['user_agent'] ?? 'MarketFlow/3.0',
+                $this->config['accept'] ?? 'text/html',
+                $this->config['api_timeout'] ?? 10
+            );
+
+            return ProviderProductSnapshot::create(
+                $reference->provider,
+                $reference->externalId,
+                $html
+            );
+        }
+
         try {
             $response = Http::withHeaders([
-                'User-Agent' => $this->config['user_agent'],
+                'User-Agent' => $this->config['user_agent'] ?? 'MarketFlow/3.0',
                 'Accept' => 'application/json',
-            ])->timeout($this->config['api_timeout'])
+            ])->timeout($this->config['api_timeout'] ?? 10)
                 ->get($url);
 
             if ($response->failed()) {
                 throw new \Exception('Provider request failed: '.$response->status());
             }
 
-            $rawData = $response->json();
-
             return ProviderProductSnapshot::create(
                 $reference->provider,
                 $reference->externalId,
-                json_encode($rawData)
+                json_encode($response->json())
             );
         } catch (\Exception $e) {
             \Log::error('Torob fetch error', ['error' => $e->getMessage(), 'url' => $url]);
@@ -83,133 +92,58 @@ class TorobProcessor implements MarketplaceProvider
         }
     }
 
-    /**
-     * Normalize provider response to common structure
-     */
     public function normalizeSnapshot(ProviderProductSnapshot $snapshot): NormalizedProductData
     {
-        $rawData = json_decode($snapshot->rawData, true) ?? [];
+        $raw = json_decode($snapshot->rawData, true);
 
-        // Extract data using safe JSON path reader
-        $title = $this->extractTitle($rawData);
-        $price = $this->extractPrice($rawData);
-        $availability = $this->extractAvailability($rawData);
-        $stockStatus = $this->extractStockStatus($rawData);
-        $seller = $this->extractSeller($rawData);
-        $badges = $this->extractBadges($rawData);
-        $imageUrl = $this->extractImageUrl($rawData);
-        $productUrl = $this->extractProductUrl($rawData);
-        $observedAt = $this->extractObservedAt($rawData);
+        if (! is_array($raw)) {
+            // Treat as HTML
+            $raw = $this->scraper()->extract(
+                $snapshot->rawData,
+                $this->config['selectors'] ?? []
+            );
+        }
+
+        // Support both the legacy JSON shape used by tests/fixtures
+        // (product.title, price.amount, seller.name, …) and the flat
+        // shape produced by the scraper (title, price, seller, …).
+        $title = $raw['title']
+            ?? $raw['product']['title']
+            ?? null;
+
+        $priceData = $raw['price'] ?? $raw['product']['price'] ?? [];
+        $seller = $raw['seller']
+            ?? (isset($raw['product']['seller']) ? $raw['product']['seller'] : null);
 
         return NormalizedProductData::create([
             'provider' => $snapshot->provider,
             'externalId' => $snapshot->externalId,
             'title' => $title,
-            'price' => $price,
-            'availability' => $availability,
-            'stockStatus' => $stockStatus,
-            'seller' => $seller,
-            'badges' => $badges,
-            'imageUrl' => $imageUrl,
-            'productUrl' => $productUrl,
-            'observedAt' => $observedAt,
-            'raw' => $rawData,
+            'price' => [
+                'amount' => $priceData['amount'] ?? 0,
+                'currency' => $priceData['currency'] ?? 'IRR',
+                'display' => $priceData['display'] ?? null,
+            ],
+            'availability' => $raw['availability'] ?? null,
+            'stockStatus' => $raw['stock_status'] ?? null,
+            'seller' => is_array($seller) ? $seller : (isset($seller) ? ['name' => $seller] : null),
+            'badges' => $raw['badges'] ?? [],
+            'imageUrl' => $raw['image'] ?? $raw['image_url'] ?? null,
+            'productUrl' => $raw['product_url'] ?? null,
+            'observedAt' => $raw['posted_at'] ?? $raw['observed_at'] ?? null,
+            'raw' => $raw,
         ]);
     }
 
-    /**
-     * Get provider name
-     */
     public function getProviderName(): string
     {
         return 'torob';
     }
 
-    /**
-     * Build the URL for fetching product data
-     */
     protected function buildUrl(ProductReference $reference): string
     {
-        $base = $this->config['base_url'];
+        $base = $this->config['base_url'] ?? 'https://torob.com';
 
-        return $base.'/p/'.$reference->externalId.'/'.str_replace(' ', '-', strtolower($reference->externalId)).'/';
-    }
-
-    /**
-     * Safely extract title from raw data
-     */
-    protected function extractTitle(array $data): ?string
-    {
-        return $data['product']['title'] ?? null;
-    }
-
-    /**
-     * Safely extract price from raw data
-     */
-    protected function extractPrice(array $data): ?array
-    {
-        $priceData = $data['price'] ?? [];
-
-        return [
-            'amount' => $priceData['amount'] ?? 0,
-            'currency' => $priceData['currency'] ?? 'IRR',
-            'display' => $priceData['display'] ?? null,
-        ];
-    }
-
-    /**
-     * Safely extract availability from raw data
-     */
-    protected function extractAvailability(array $data): ?string
-    {
-        return $data['availability'] ?? null;
-    }
-
-    /**
-     * Safely extract stock status from raw data
-     */
-    protected function extractStockStatus(array $data): ?string
-    {
-        return $data['stock_status'] ?? null;
-    }
-
-    /**
-     * Safely extract seller information from raw data
-     */
-    protected function extractSeller(array $data): ?array
-    {
-        return $data['seller'] ?? null;
-    }
-
-    /**
-     * Safely extract badges from raw data
-     */
-    protected function extractBadges(array $data): array
-    {
-        return $data['badges'] ?? [];
-    }
-
-    /**
-     * Safely extract image URL from raw data
-     */
-    protected function extractImageUrl(array $data): ?string
-    {
-        return $data['image_url'] ?? null;
-    }
-
-    /**
-     * Safely extract product URL from raw data
-     */
-    protected function extractProductUrl(array $data): ?string
-    {
-        return $data['product_url'] ?? null;
-    }
-
-    /**
-     * Safely extract observed_at timestamp from raw data
-     */
-    protected function extractObservedAt(array $data): ?string
-    {
-        return $data['observed_at'] ?? null;
+        return $base.'/p/'.$reference->externalId.'/'.$reference->canonicalUrl.'/';
     }
 }

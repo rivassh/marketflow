@@ -6,11 +6,14 @@ use App\Models\Watch;
 use App\Providers\DTOs\NormalizedProductData;
 use App\Providers\DTOs\ProviderProductSnapshot;
 use App\Providers\Processors\TorobProcessor;
+use App\Providers\ProviderRegistry;
+use App\Services\NotificationService;
 use App\Services\WorkflowDispatcher;
 use App\Workflow\WorkflowType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
+use Mockery;
 use Tests\TestCase;
 
 class WorkflowDispatcherTest extends TestCase
@@ -22,7 +25,9 @@ class WorkflowDispatcherTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->dispatcher = new WorkflowDispatcher;
+        $registry = app(ProviderRegistry::class);
+        $notification = Mockery::mock(NotificationService::class);
+        $this->dispatcher = new WorkflowDispatcher($notification, $registry);
         Queue::fake();
     }
 
@@ -38,25 +43,18 @@ class WorkflowDispatcherTest extends TestCase
         Log::shouldReceive('error')->never();
 
         $this->dispatcher->dispatch($watch);
-        // No exception means early return worked
         $this->assertTrue(true);
     }
 
     public function test_resolve_processor_returns_torob_processor_for_torob_url(): void
     {
-        $reflection = new \ReflectionMethod($this->dispatcher, 'resolveProcessor');
-        $reflection->setAccessible(true);
-
-        $processor = $reflection->invoke($this->dispatcher, 'https://torob.com/p/12345/iphone-14-pro/');
+        $processor = $this->dispatcher->getRegistry()->resolve('https://torob.com/p/12345/iphone-14-pro/');
         $this->assertInstanceOf(TorobProcessor::class, $processor);
     }
 
     public function test_resolve_processor_returns_null_for_unsupported_url(): void
     {
-        $reflection = new \ReflectionMethod($this->dispatcher, 'resolveProcessor');
-        $reflection->setAccessible(true);
-
-        $processor = $reflection->invoke($this->dispatcher, 'https://example.com/p/12345/');
+        $processor = $this->dispatcher->getRegistry()->resolve('https://example.com/p/12345/');
         $this->assertNull($processor);
     }
 
@@ -66,7 +64,7 @@ class WorkflowDispatcherTest extends TestCase
             'is_active' => true,
             'is_tracked' => true,
             'product_url' => 'https://unsupported.com/p/12345/',
-            'last_checked_at' => null, // ensure shouldCheck returns true
+            'last_checked_at' => null,
         ]);
 
         Log::shouldReceive('warning')
