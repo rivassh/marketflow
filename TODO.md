@@ -16,6 +16,7 @@ every time take a todo task mve it to in_progress part after done move to done p
 * Confirmed deployment at torob.adlr.ir is operational
 * Phase 0: Stabilization blockers — all 8 items complete
 * Phase 1: Provider Layer (Torob + Divar) — all items complete
+* Phase 2: Purchase Domain (PurchaseIntent, PurchaseOrder, PurchaseItem) — all items complete
 
 # PHASE 0 — Stabilization (blockers) — DONE
 - [x] 1. Fixed NotificationService::send() static/instance mismatch in WorkflowDispatcher and WorkflowAction
@@ -35,13 +36,13 @@ every time take a todo task mve it to in_progress part after done move to done p
 - [x] WatchController::store uses registry instead of hardcoded TorobProcessor
 - [x] Tests: supports(), URL parsing, normalize with fixtures (Http::fake)
 
-# PHASE 2 — Purchase Intent Domain
-- [ ] Models: PurchaseIntent, PurchaseOrder, PurchaseItem
-- [ ] State machine: draft → awaiting_approval → approved → placed → failed/cancelled
-- [ ] No automatic financial transactions; max to awaiting_approval
-- [ ] Endpoints: CRUD purchase-intents + POST /purchase-orders/{id}/approve
-- [ ] Audit log for status changes
-- [ ] Feature test for full state cycle including unauthorized approve
+# PHASE 2 — Purchase Domain — DONE
+- [x] Models: PurchaseIntent, PurchaseOrder, PurchaseItem, PurchaseAuditLog
+- [x] State machine: draft → awaiting_approval → approved → placed → failed/cancelled
+- [x] No automatic financial transactions; max to awaiting_approval; user approves explicitly
+- [x] Endpoints: CRUD purchase-intents + submit + CRUD purchase-orders + submit + approve
+- [x] Audit log for every status change (who, when, what data)
+- [x] Feature test for full state cycle including unauthorized approve
 
 # PHASE 3 — SiteAction Execution Layer
 - [ ] SiteAction interface: supports(url), plan(context), execute(plan)

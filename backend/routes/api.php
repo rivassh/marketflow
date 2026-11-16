@@ -4,6 +4,8 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ObservationController;
 use App\Http\Controllers\ProductPriceAlertController;
+use App\Http\Controllers\PurchaseIntentController;
+use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\WatchController;
 use Illuminate\Support\Facades\Route;
 
@@ -54,4 +56,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/watches/{id}', [WatchController::class, 'update']);
     Route::delete('/watches/{id}', [WatchController::class, 'destroy']);
     Route::get('/watches/{id}/observations', [ObservationController::class, 'index']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Purchase Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('purchase-intents', PurchaseIntentController::class);
+    Route::post('/purchase-intents/{id}/submit', [PurchaseIntentController::class, 'submit']);
+    Route::apiResource('purchase-orders', PurchaseOrderController::class);
+    Route::post('/purchase-orders/{id}/submit', [PurchaseOrderController::class, 'submit']);
+    Route::post('/purchase-orders/{id}/approve', [PurchaseOrderController::class, 'approve']);
 });
