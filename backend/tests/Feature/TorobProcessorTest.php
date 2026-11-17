@@ -105,4 +105,119 @@ class TorobProcessorTest extends TestCase
         $this->assertEquals('unavailable', $normalized->availability);
         $this->assertEquals('ناموجود', $normalized->stockStatus);
     }
+
+    // --- Closed-box: UUID id + Persian slug ---
+
+    public function test_it_supports_uuid_and_persian_slug_urls(): void
+    {
+        $url = 'https://torob.com/p/49216e75-b6f3-4266-985d-8b034b8a9716/هدفون-بلوتوثی-موزیک-اپولو-مدل-yrb-22/';
+
+        $this->assertTrue($this->processor->supports($url));
+    }
+
+    public function test_it_parses_uuid_reference(): void
+    {
+        $url = 'https://torob.com/p/49216e75-b6f3-4266-985d-8b034b8a9716/هدفون-بلوتوثی-موزیک-اپولو-مدل-yrb-22/';
+
+        $reference = $this->processor->parseProductReference($url);
+
+        $this->assertInstanceOf(ProductReference::class, $reference);
+        $this->assertEquals('torob', $reference->provider);
+        $this->assertEquals('49216e75-b6f3-4266-985d-8b034b8a9716', $reference->externalId);
+        $this->assertEquals('هدفون-بلوتوثی-موزیک-اپولو-مدل-yrb-22', $reference->canonicalUrl);
+    }
+
+    public function test_it_parses_uppercase_uuid_and_url_encoded_slug(): void
+    {
+        $url = 'https://torob.com/p/49216E75-B6F3-4266-985D-8B034B8A9716/%D9%87%D8%AF%D9%81%D9%88%D9%86-%D8%A8%D9%84%D9%88%D8%AA%D9%88%D8%AB%DB%8C/';
+
+        $reference = $this->processor->parseProductReference($url);
+
+        $this->assertEquals('49216e75-b6f3-4266-985d-8b034b8a9716', $reference->externalId);
+        $this->assertEquals('هدفون-بلوتوثی', $reference->canonicalUrl);
+    }
+
+    public function test_it_normalizes_scraped_persian_digit_price(): void
+    {
+        $html = file_get_contents(__DIR__.'/../Fixtures/torob_uuid_product.html');
+        $this->assertNotFalse($html, 'fixture must exist');
+
+        $snapshot = ProviderProductSnapshot::create(
+            'torob',
+            '49216e75-b6f3-4266-985d-8b034b8a9716',
+            $html
+        );
+
+        $normalized = $this->processor->normalizeSnapshot($snapshot);
+
+        $this->assertEquals(4400000, $normalized->price['amount']);
+        $this->assertStringContainsString('۴٫۴۰۰٫۰۰۰', $normalized->price['display'] ?? '');
+    }
+
+    public function test_it_normalizes_arabic_digit_price_string(): void
+    {
+        $snapshot = ProviderProductSnapshot::create(
+            'torob',
+            '12345',
+            json_encode([
+                'title' => 'Test',
+                'price' => '٤٤٠٠٠٠٠',
+            ])
+        );
+
+        $normalized = $this->processor->normalizeSnapshot($snapshot);
+
+        $this->assertEquals(4400000, $normalized->price['amount']);
+    }
+
+    public function test_it_keeps_legacy_json_price_shape(): void
+    {
+        $snapshot = ProviderProductSnapshot::create(
+            'torob',
+            '12345',
+            json_encode([
+                'product' => [
+                    'title' => 'آیفون',
+                    'price' => [
+                        'amount' => 9500000,
+                        'currency' => 'IRR',
+                        'display' => '۹.۵ میلیون تومان',
+                    ],
+                ],
+            ])
+        );
+
+        $normalized = $this->processor->normalizeSnapshot($snapshot);
+
+        $this->assertEquals(9500000, $normalized->price['amount']);
+        $this->assertSame('IRR', $normalized->price['currency']);
+        $this->assertStringContainsString('میلیون', $normalized->price['display'] ?? '');
+    }
+
+    public function test_it_serves_fixture_path_for_deterministic_checks(): void
+    {
+        $fixture = __DIR__.'/../Fixtures/torob_uuid_product.html';
+        $this->assertFileExists($fixture);
+
+        $processor = new TorobProcessor(
+            null,
+            ['fixture_path' => $fixture, 'base_url' => 'https://torob.com']
+        );
+
+        $reference = ProductReference::create(
+            'torob',
+            '49216e75-b6f3-4266-985d-8b034b8a9716',
+            'هدفون-بلوتوثی-موزیک-اپولو-مدل-yrb-22'
+        );
+
+        $snapshot = $processor->fetchProduct($reference);
+        $this->assertSame(
+            '49216e75-b6f3-4266-985d-8b034b8a9716',
+            $snapshot->externalId
+        );
+
+        $normalized = $processor->normalizeSnapshot($snapshot);
+        $this->assertEquals(4400000, $normalized->price['amount']);
+        $this->assertStringContainsString('۴٫۴۰۰٫۰۰۰', $normalized->price['display'] ?? '');
+    }
 }

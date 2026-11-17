@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Watch;
 use App\Providers\ProviderRegistry;
+use App\Services\WorkflowDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -137,5 +138,35 @@ class WatchController extends Controller
         $watch->delete();
 
         return response()->json(null, 204);
+    }
+
+    public function check(Request $request, int $id)
+    {
+        $watch = Watch::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail();
+
+        if (! $watch->shouldCheck()) {
+            $watch->update([
+                'last_checked_at' => now(),
+                'next_check_at' => now()->addMinutes($watch->frequency_minutes),
+            ]);
+
+            return response()->json([
+                'message' => 'Watch is not due for a check yet',
+                'data' => $watch,
+            ]);
+        }
+
+        $dispatcher = app(WorkflowDispatcher::class);
+        $dispatcher->dispatch($watch);
+
+        $watch->refresh();
+
+        return response()->json([
+            'message' => 'Watch checked successfully',
+            'data' => $watch,
+            'latest_observation' => $watch->observations()->latest()->first(),
+        ]);
     }
 }

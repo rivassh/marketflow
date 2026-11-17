@@ -57,6 +57,27 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/watches/{id}', [WatchController::class, 'update']);
     Route::delete('/watches/{id}', [WatchController::class, 'destroy']);
     Route::get('/watches/{id}/observations', [ObservationController::class, 'index']);
+    Route::post('/watches/{id}/check', [WatchController::class, 'check']);
+});
+
+// DEBUG-only route: returns the resolved TorobProcessor config so we can
+// confirm the fixture_path seam is visible to the HTTP process.
+Route::get('/__debug/torob-config', function () {
+    $p = app(\App\Providers\ProviderRegistry::class)
+        ->resolve('https://torob.com/p/1/slug/');
+    if (! $p) {
+        return response()->json(['error' => 'no processor'], 500);
+    }
+    $r = new ReflectionProperty($p, 'config');
+    $r->setAccessible(true);
+
+    return response()->json([
+        'fixture_path' => $r->getValue($p)['fixture_path'] ?? null,
+        'is_file' => is_file($r->getValue($p)['fixture_path'] ?? ''),
+        'scrape_html' => $r->getValue($p)['scrape_html'] ?? null,
+        'env' => env('TOROB_FIXTURE_PATH'),
+        'config_fixture' => config('marketflow.torob')['fixture_path'] ?? null,
+    ]);
 });
 
 /*

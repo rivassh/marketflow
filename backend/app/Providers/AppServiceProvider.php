@@ -27,9 +27,22 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(TorobProcessor::class, function ($app) {
+            $torobConfig = config('marketflow.torob', []);
+
+            // Test-only seam: when TOROB_FIXTURE_PATH is set (in the process
+            // environment or .env), the processor serves that fixture file
+            // instead of hitting torob.com. This lets closed-box tests assert
+            // deterministic prices (e.g. Persian digits) without mocking
+            // Http::fake. Use getenv() because Laravel's env() helper reads
+            // from the .env file only, not the live process environment.
+            $fixturePath = getenv('TOROB_FIXTURE_PATH');
+            if (is_string($fixturePath) && $fixturePath !== '') {
+                $torobConfig['fixture_path'] = $fixturePath;
+            }
+
             return new TorobProcessor(
                 $app->make(ScrapingHelper::class),
-                config('marketflow.torob')
+                $torobConfig
             );
         });
 
