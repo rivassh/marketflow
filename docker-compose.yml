@@ -53,6 +53,8 @@ services:
       - sail
       - default
     command: tail -f /dev/null
+    profiles:
+      - playwright
   
 #  pgadmin4:
 #    image: dpage/pgadmin4

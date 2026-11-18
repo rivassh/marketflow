@@ -7,8 +7,14 @@ install:
 up:
 	docker compose up -d --build
 
+up-with-playwright:
+	docker compose --profile playwright up -d --build
+
 down:
 	docker compose down -v
+
+down-playwright:
+	docker compose --profile playwright down -v
 
 test:
 	cd backend && php artisan test
